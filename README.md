@@ -9,6 +9,20 @@ This is a Vite-based Three.js dashboard for loading and inspecting avatar GLB fi
 - Animation, procedural action, and morph summary in the UI
 - Best-effort auto-load of the bundled `Smur_male6.glb` asset when available
 
+## Using The Dashboard
+
+When a model is loaded, the sidebar is split into panels for the main tasks:
+
+- Upload: choose a `.glb` or `.gltf` file from your machine
+- Armature: inspect the detected skeleton and override bone mapping when needed
+- Animations: play embedded clips and stop the current animation
+- Procedural Animations: trigger rig-driven motions such as idle-friendly actions
+- Expression presets: apply preset facial expressions
+- Idle behaviors: toggle auto-blink, breathing, and head sway
+- Camera: frame the head or the full body
+- Lip-sync test: generate a simple viseme sequence from text
+- Blendshape sliders: search, inspect, and reset morph targets
+
 ## Getting Started
 
 ```bash
