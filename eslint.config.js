@@ -1,12 +1,24 @@
 import js from '@eslint/js';
 import globals from 'globals';
+import tseslint from 'typescript-eslint';
 import prettier from 'eslint-config-prettier';
 
-export default [
+export default tseslint.config(
   { ignores: ['dist/', 'dist-demo/', 'coverage/', 'node_modules/'] },
   js.configs.recommended,
+  ...tseslint.configs.recommendedTypeChecked,
   {
-    files: ['src/**/*.js'],
+    languageOptions: {
+      parserOptions: {
+        projectService: {
+          allowDefaultProject: ['eslint.config.js'],
+        },
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
+  },
+  {
+    files: ['src/**/*.ts'],
     languageOptions: {
       globals: { ...globals.browser },
     },
@@ -14,20 +26,21 @@ export default [
       'no-console': ['warn', { allow: ['warn', 'error'] }],
       eqeqeq: ['error', 'smart'],
       'no-empty': ['error', { allowEmptyCatch: true }],
-      'no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
     },
   },
   {
-    files: ['*.config.js', 'vite.config.js'],
+    files: ['tests/**/*.ts'],
     languageOptions: {
       globals: { ...globals.node },
     },
   },
   {
-    files: ['tests/**/*.js'],
+    files: ['**/*.js'],
+    ...tseslint.configs.disableTypeChecked,
     languageOptions: {
       globals: { ...globals.node },
     },
   },
   prettier,
-];
+);

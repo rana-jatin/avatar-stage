@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, afterEach } from 'vitest';
-import { VISEME_TO_ARKIT, textToVisemes, playVisemeSequence } from '../src/lipsync.js';
-import { discoverMorphs, getMorph } from '../src/morphs.js';
-import { makeMorphMesh, installFakeRaf } from './helpers/rigs.js';
+﻿import { describe, it, expect, vi, afterEach } from 'vitest';
+import { VISEME_TO_ARKIT, textToVisemes, playVisemeSequence } from '../src/lipsync';
+import { discoverMorphs, getMorph } from '../src/morphs';
+import { makeMorphMesh, installFakeRaf } from './helpers/rigs';
 import * as THREE from 'three';
 
 afterEach(() => {
@@ -45,11 +45,11 @@ describe('VISEME_TO_ARKIT', () => {
   it('references only valid ARKit blendshape names', () => {
     // Build an index over every morph name the viseme table uses, then check
     // morphs.js classifies each one as ARKit.
-    const used = new Set();
+    const used = new Set<string>();
     for (const combo of Object.values(VISEME_TO_ARKIT)) {
       for (const name of Object.keys(combo)) used.add(name);
     }
-    const mesh = makeMorphMesh(Object.fromEntries([...used].map((n) => [n, 0])));
+    const mesh = makeMorphMesh(Object.fromEntries([...used].map((n): [string, number] => [n, 0])));
     const root = new THREE.Group();
     root.add(mesh);
     const idx = discoverMorphs(root);
@@ -70,7 +70,7 @@ describe('VISEME_TO_ARKIT', () => {
 
 describe('playVisemeSequence', () => {
   function makeIndex() {
-    const names = {};
+    const names: Record<string, number> = {};
     for (const combo of Object.values(VISEME_TO_ARKIT)) {
       for (const name of Object.keys(combo)) names[name] = 0;
     }
@@ -88,7 +88,7 @@ describe('playVisemeSequence', () => {
     raf.advance(50); // now=60, idx 0
     // AA opens the jaw once the index advances from the initial state.
     raf.advance(60); // now=120, idx 1 -> U
-    expect(getMorph(idx, 'mouthPucker')).toBeCloseTo(VISEME_TO_ARKIT.U.mouthPucker);
+    expect(getMorph(idx, 'mouthPucker')).toBeCloseTo(VISEME_TO_ARKIT.U.mouthPucker!);
     raf.advance(100); // now=220, past the end -> cleared
     expect(getMorph(idx, 'mouthPucker')).toBe(0);
     expect(getMorph(idx, 'jawOpen')).toBe(0);
@@ -100,7 +100,7 @@ describe('playVisemeSequence', () => {
     const idx = makeIndex();
     const cancel = playVisemeSequence(idx, ['AA', 'O', 'U'], 100);
     raf.advance(150); // idx 1 -> O applied
-    expect(getMorph(idx, 'mouthFunnel')).toBeCloseTo(VISEME_TO_ARKIT.O.mouthFunnel);
+    expect(getMorph(idx, 'mouthFunnel')).toBeCloseTo(VISEME_TO_ARKIT.O.mouthFunnel!);
     cancel();
     expect(getMorph(idx, 'mouthFunnel')).toBe(0);
     raf.advance(1000); // any queued frame must be a no-op

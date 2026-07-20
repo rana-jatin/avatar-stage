@@ -1,13 +1,39 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import type { GLTF } from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { discoverMorphs } from './morphs.js';
-import { detectArmature } from './armature.js';
-import { createProcAnimations } from './procAnim.js';
+import { discoverMorphs } from './morphs';
+import type { MorphIndex } from './morphs';
+import { detectArmature } from './armature';
+import type { Armature } from './armature';
+import { createProcAnimations } from './procAnim';
+import type { ProcAnimations } from './procAnim';
+
+export interface Viewer {
+  scene: THREE.Scene;
+  camera: THREE.PerspectiveCamera;
+  renderer: THREE.WebGLRenderer;
+  controls: OrbitControls;
+  avatar: THREE.Object3D | null;
+  armature: Armature | null;
+  mixer: THREE.AnimationMixer | null;
+  animations: Map<string, THREE.AnimationAction>;
+  procAnimations: ProcAnimations;
+  morphIndex: MorphIndex;
+  currentFileName: string | null;
+  setIdleUpdate: (fn: ((dt: number) => void) | null) => void;
+  frameHead: () => void;
+  frameBody: () => void;
+  loadGLB: (source: string | ArrayBuffer, fileName?: string | null) => Promise<void>;
+  onModelLoaded: ((viewer: Viewer) => void) | null;
+}
 
 // One-time scene/renderer setup. Returns a viewer handle whose
 // .loadGLB(source) loads a model from a URL string or an ArrayBuffer.
-export async function createViewer(canvas, onStatus = () => {}) {
+export function createViewer(
+  canvas: HTMLCanvasElement,
+  onStatus: (msg: string) => void = () => {},
+): Viewer {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -58,7 +84,7 @@ export async function createViewer(canvas, onStatus = () => {}) {
   const loader = new GLTFLoader();
 
   // --- Model state ---
-  const viewer = {
+  const viewer: Viewer = {
     scene,
     camera,
     renderer,
@@ -75,15 +101,15 @@ export async function createViewer(canvas, onStatus = () => {}) {
     },
     frameHead,
     frameBody,
-    loadGLB, // async (source: string | ArrayBuffer, fileName?)
-    onModelLoaded: null, // set by main.js
+    loadGLB,
+    onModelLoaded: null, // set by main.ts
   };
 
-  let idleUpdate = null;
-  let headBoneWorld = new THREE.Vector3();
-  let avatarBox = new THREE.Box3();
-  let avatarSize = new THREE.Vector3();
-  let avatarCenter = new THREE.Vector3();
+  let idleUpdate: ((dt: number) => void) | null = null;
+  const headBoneWorld = new THREE.Vector3();
+  const avatarBox = new THREE.Box3();
+  const avatarSize = new THREE.Vector3();
+  const avatarCenter = new THREE.Vector3();
 
   // ----- Animation loop runs even before first GLB loaded -----
   function resize() {
@@ -117,13 +143,14 @@ export async function createViewer(canvas, onStatus = () => {}) {
     }
     scene.remove(viewer.avatar);
     viewer.avatar.traverse((o) => {
-      if (o.geometry) o.geometry.dispose();
-      if (o.material) {
-        const mats = Array.isArray(o.material) ? o.material : [o.material];
+      const mesh = o as THREE.Mesh;
+      if (mesh.geometry) mesh.geometry.dispose();
+      if (mesh.material) {
+        const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
         for (const m of mats) {
           for (const k of Object.keys(m)) {
-            const v = m[k];
-            if (v && v.isTexture) v.dispose();
+            const v = (m as unknown as Record<string, unknown>)[k];
+            if (v && (v as THREE.Texture).isTexture) (v as THREE.Texture).dispose();
           }
           m.dispose();
         }
@@ -138,12 +165,12 @@ export async function createViewer(canvas, onStatus = () => {}) {
   }
 
   // ----- Load a GLB from either a URL string or an ArrayBuffer -----
-  async function loadGLB(source, fileName = null) {
+  async function loadGLB(source: string | ArrayBuffer, fileName: string | null = null) {
     onStatus('Loading GLB…');
-    let gltf;
+    let gltf: GLTF;
     try {
       if (typeof source === 'string') {
-        gltf = await new Promise((resolve, reject) => {
+        gltf = await new Promise<GLTF>((resolve, reject) => {
           loader.load(
             source,
             resolve,
@@ -157,12 +184,12 @@ export async function createViewer(canvas, onStatus = () => {}) {
           );
         });
       } else {
-        gltf = await new Promise((resolve, reject) => {
+        gltf = await new Promise<GLTF>((resolve, reject) => {
           loader.parse(source, '', resolve, reject);
         });
       }
     } catch (err) {
-      onStatus(`Failed to load GLB: ${err.message || err}`);
+      onStatus(`Failed to load GLB: ${err instanceof Error ? err.message : String(err)}`);
       throw err;
     }
 
@@ -170,18 +197,19 @@ export async function createViewer(canvas, onStatus = () => {}) {
 
     const avatar = gltf.scene;
     avatar.traverse((o) => {
-      if (o.isMesh) {
-        o.castShadow = true;
-        o.receiveShadow = true;
-        o.frustumCulled = false;
+      const mesh = o as THREE.Mesh;
+      if (mesh.isMesh) {
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        mesh.frustumCulled = false;
       }
     });
     scene.add(avatar);
     avatar.updateMatrixWorld(true);
 
     // Normalize scale + position.
-    let rawBox = new THREE.Box3().setFromObject(avatar);
-    let rawSize = rawBox.getSize(new THREE.Vector3());
+    const rawBox = new THREE.Box3().setFromObject(avatar);
+    const rawSize = rawBox.getSize(new THREE.Vector3());
     if (rawSize.y > 10) {
       const s = 1.7 / rawSize.y;
       avatar.scale.multiplyScalar(s);
@@ -201,20 +229,22 @@ export async function createViewer(canvas, onStatus = () => {}) {
     viewer.currentFileName = fileName;
 
     // Armature + morphs + animations.
-    viewer.armature = detectArmature(avatar);
+    const armature = detectArmature(avatar);
+    const mixer = new THREE.AnimationMixer(avatar);
+    viewer.armature = armature;
     viewer.morphIndex = discoverMorphs(avatar);
-    viewer.mixer = new THREE.AnimationMixer(avatar);
+    viewer.mixer = mixer;
 
-    const animations = new Map();
+    const animations = new Map<string, THREE.AnimationAction>();
     for (const clip of gltf.animations) {
-      animations.set(clip.name, viewer.mixer.clipAction(clip));
+      animations.set(clip.name, mixer.clipAction(clip));
     }
     viewer.animations = animations;
 
-    viewer.procAnimations = createProcAnimations(viewer.armature, viewer.mixer);
+    viewer.procAnimations = createProcAnimations(armature, mixer);
 
     // Camera framing.
-    const head = viewer.armature.resolved.head;
+    const head = armature.resolved.head;
     if (head) {
       head.getWorldPosition(headBoneWorld);
     } else {
@@ -232,8 +262,8 @@ export async function createViewer(canvas, onStatus = () => {}) {
     controls.update();
 
     console.log('[viewer] loaded', fileName || (typeof source === 'string' ? source : 'buffer'), {
-      bones: viewer.armature.bones.size,
-      rig: viewer.armature.rig,
+      bones: armature.bones.size,
+      rig: armature.rig,
       animations: [...viewer.animations.keys()],
       morphs: viewer.morphIndex.allNames.length,
     });
@@ -258,7 +288,7 @@ export async function createViewer(canvas, onStatus = () => {}) {
     camera.position.copy(controls.target).addScaledVector(dir, distanceToFitBox(avatarSize, 1.18));
   }
 
-  function distanceToFitBox(size, margin = 1.15) {
+  function distanceToFitBox(size: THREE.Vector3, margin = 1.15) {
     const fovRad = (camera.fov * Math.PI) / 180;
     const fitHeight = size.y / (2 * Math.tan(fovRad / 2));
     const fitWidth = size.x / (2 * Math.tan(fovRad / 2) * Math.max(0.1, camera.aspect));

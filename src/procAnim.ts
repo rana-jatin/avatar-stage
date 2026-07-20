@@ -3,17 +3,29 @@
 // cleanly with the existing mixer and the idle behaviors.
 
 import * as THREE from 'three';
+import type { AnimationAction, AnimationMixer, Bone, KeyframeTrack, Object3D } from 'three';
+import type { Armature, Role } from './armature';
 
 const PI = Math.PI;
 const D2R = PI / 250;
 
-function quatTrack(bone, times, eulerOffsets) {
+function isBone(o: Object3D | null | undefined): o is Bone {
+  return Boolean(o && (o as Bone).isBone);
+}
+
+// Bones looked up by a computed role name (some combinations, like
+// `leftThumbPalm`, intentionally have no canonical role and resolve to null).
+function roleBone(arm: Armature, name: string): Bone | null {
+  return (arm.resolved as Record<string, Bone | null | undefined>)[name] ?? null;
+}
+
+function quatTrack(bone: Bone, times: number[], eulerOffsets: number[][]): KeyframeTrack {
   const restQ = bone.quaternion.clone();
   const values = new Float32Array(times.length * 4);
   const q = new THREE.Quaternion();
   const e = new THREE.Euler();
   for (let i = 0; i < times.length; i++) {
-    const [x, y, z] = eulerOffsets[i];
+    const [x = 0, y = 0, z = 0] = eulerOffsets[i] ?? [];
     e.set(x, y, z, 'XYZ');
     q.setFromEuler(e).multiply(restQ);
     values[i * 4 + 0] = q.x;
@@ -24,14 +36,14 @@ function quatTrack(bone, times, eulerOffsets) {
   return new THREE.QuaternionKeyframeTrack(`${bone.name}.quaternion`, times, values);
 }
 
-function localQuatTrack(bone, times, eulerOffsets) {
+function localQuatTrack(bone: Bone, times: number[], eulerOffsets: number[][]): KeyframeTrack {
   const restQ = bone.quaternion.clone();
   const values = new Float32Array(times.length * 4);
   const q = new THREE.Quaternion();
   const offsetQ = new THREE.Quaternion();
   const e = new THREE.Euler();
   for (let i = 0; i < times.length; i++) {
-    const [x, y, z] = eulerOffsets[i];
+    const [x = 0, y = 0, z = 0] = eulerOffsets[i] ?? [];
     e.set(x, y, z, 'XYZ');
     q.copy(restQ).multiply(offsetQ.setFromEuler(e));
     values[i * 4 + 0] = q.x;
@@ -42,11 +54,11 @@ function localQuatTrack(bone, times, eulerOffsets) {
   return new THREE.QuaternionKeyframeTrack(`${bone.name}.quaternion`, times, values);
 }
 
-function posTrack(bone, times, positionOffsets) {
+function posTrack(bone: Bone, times: number[], positionOffsets: number[][]): KeyframeTrack {
   const rest = bone.position.clone();
   const values = new Float32Array(times.length * 3);
   for (let i = 0; i < times.length; i++) {
-    const [dx, dy, dz] = positionOffsets[i];
+    const [dx = 0, dy = 0, dz = 0] = positionOffsets[i] ?? [];
     values[i * 3 + 0] = rest.x + dx;
     values[i * 3 + 1] = rest.y + dy;
     values[i * 3 + 2] = rest.z + dz;
@@ -54,7 +66,13 @@ function posTrack(bone, times, positionOffsets) {
   return new THREE.VectorKeyframeTrack(`${bone.name}.position`, times, values);
 }
 
-function pushQuat(tracks, used, bone, times, eulerOffsets) {
+function pushQuat(
+  tracks: KeyframeTrack[],
+  used: Set<string>,
+  bone: Bone | null | undefined,
+  times: number[],
+  eulerOffsets: number[][],
+) {
   if (!bone) return;
   const key = `${bone.uuid}:quaternion`;
   if (used.has(key)) return;
@@ -62,7 +80,13 @@ function pushQuat(tracks, used, bone, times, eulerOffsets) {
   tracks.push(quatTrack(bone, times, eulerOffsets));
 }
 
-function pushLocalQuat(tracks, used, bone, times, eulerOffsets) {
+function pushLocalQuat(
+  tracks: KeyframeTrack[],
+  used: Set<string>,
+  bone: Bone | null | undefined,
+  times: number[],
+  eulerOffsets: number[][],
+) {
   if (!bone) return;
   const key = `${bone.uuid}:quaternion`;
   if (used.has(key)) return;
@@ -70,7 +94,13 @@ function pushLocalQuat(tracks, used, bone, times, eulerOffsets) {
   tracks.push(localQuatTrack(bone, times, eulerOffsets));
 }
 
-function pushPos(tracks, used, bone, times, positionOffsets) {
+function pushPos(
+  tracks: KeyframeTrack[],
+  used: Set<string>,
+  bone: Bone | null | undefined,
+  times: number[],
+  positionOffsets: number[][],
+) {
   if (!bone) return;
   const key = `${bone.uuid}:position`;
   if (used.has(key)) return;
@@ -78,11 +108,17 @@ function pushPos(tracks, used, bone, times, positionOffsets) {
   tracks.push(posTrack(bone, times, positionOffsets));
 }
 
-function degKeys(values) {
+function degKeys(values: number[]): number[] {
   return values.map((v) => v * D2R);
 }
 
-const PALM_SPECS = [
+interface PalmSpec {
+  suffix: string;
+  curl: number;
+  spread: number;
+}
+
+const PALM_SPECS: PalmSpec[] = [
   { suffix: 'ThumbPalm', curl: 0.55, spread: -0.9 },
   { suffix: 'IndexPalm', curl: 0.8, spread: -0.35 },
   { suffix: 'MiddlePalm', curl: 1.0, spread: 0 },
@@ -92,26 +128,29 @@ const PALM_SPECS = [
 
 const FINGER_SEGMENT_CURL = [0.72, 0.52, 0.36];
 
-function boneDepth(bone) {
+function boneDepth(bone: Bone): number {
   let d = 1;
   for (const c of bone.children || []) {
-    if (c.isBone) d = Math.max(d, 1 + boneDepth(c));
+    if (isBone(c)) d = Math.max(d, 1 + boneDepth(c));
   }
   return d;
 }
 
-function fingerChildChain(root, maxSegments = FINGER_SEGMENT_CURL.length) {
-  const chain = [];
+function fingerChildChain(root: Bone, maxSegments = FINGER_SEGMENT_CURL.length): Bone[] {
+  const chain: Bone[] = [];
   let cur = root;
   for (let i = 0; i < maxSegments; i++) {
-    const children = (cur.children || []).filter((c) => c.isBone);
-    if (children.length === 0) break;
-    let best = children[0];
+    const children = (cur.children || []).filter(isBone);
+    const first = children[0];
+    if (!first) break;
+    let best = first;
     let bestDepth = boneDepth(best);
     for (let j = 1; j < children.length; j++) {
-      const d = boneDepth(children[j]);
+      const candidate = children[j];
+      if (!candidate) continue;
+      const d = boneDepth(candidate);
       if (d > bestDepth) {
-        best = children[j];
+        best = candidate;
         bestDepth = d;
       }
     }
@@ -121,22 +160,25 @@ function fingerChildChain(root, maxSegments = FINGER_SEGMENT_CURL.length) {
   return chain;
 }
 
-function sideFingerRoots(arm, side) {
-  const roots = [];
-  const seen = new Set();
+function sideFingerRoots(
+  arm: Armature,
+  side: 'left' | 'right',
+): Array<{ bone: Bone; spec: PalmSpec }> {
+  const roots: Array<{ bone: Bone; spec: PalmSpec }> = [];
+  const seen = new Set<string>();
   for (const spec of PALM_SPECS) {
-    const bone = arm.resolved[`${side}${spec.suffix}`];
+    const bone = roleBone(arm, `${side}${spec.suffix}`);
     if (!bone || seen.has(bone.uuid)) continue;
     roots.push({ bone, spec });
     seen.add(bone.uuid);
   }
   if (roots.length > 0) return roots;
 
-  const hand = arm.resolved[`${side}Hand`];
+  const hand = roleBone(arm, `${side}Hand`);
   if (!hand) return roots;
 
   const children = (hand.children || [])
-    .filter((c) => c.isBone && !seen.has(c.uuid))
+    .filter((c): c is Bone => isBone(c) && !seen.has(c.uuid))
     .sort((a, b) =>
       a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }),
     );
@@ -146,20 +188,30 @@ function sideFingerRoots(arm, side) {
   for (const child of children) {
     while (
       specIndex < fallbackSpecs.length &&
-      roots.some((r) => r.spec.suffix === fallbackSpecs[specIndex].suffix)
+      roots.some((r) => r.spec.suffix === fallbackSpecs[specIndex]?.suffix)
     ) {
       specIndex++;
     }
     const spec = fallbackSpecs[Math.min(specIndex, fallbackSpecs.length - 1)];
-    roots.push({ bone: child, spec });
-    seen.add(child.uuid);
+    if (spec) {
+      roots.push({ bone: child, spec });
+      seen.add(child.uuid);
+    }
     specIndex++;
   }
 
   return roots;
 }
 
-function pushPalmShape(tracks, used, arm, side, times, curlKeys, spreadKeys = null) {
+function pushPalmShape(
+  tracks: KeyframeTrack[],
+  used: Set<string>,
+  arm: Armature,
+  side: 'left' | 'right',
+  times: number[],
+  curlKeys: number[],
+  spreadKeys: number[] | null = null,
+) {
   const sideSign = side === 'left' ? -1 : 1;
   for (const { bone, spec } of sideFingerRoots(arm, side)) {
     pushLocalQuat(
@@ -175,7 +227,7 @@ function pushPalmShape(tracks, used, arm, side, times, curlKeys, spreadKeys = nu
     );
     for (const [segmentIndex, child] of fingerChildChain(bone).entries()) {
       const segmentCurl =
-        FINGER_SEGMENT_CURL[segmentIndex] ?? FINGER_SEGMENT_CURL[FINGER_SEGMENT_CURL.length - 1];
+        FINGER_SEGMENT_CURL[segmentIndex] ?? FINGER_SEGMENT_CURL[FINGER_SEGMENT_CURL.length - 1]!;
       pushLocalQuat(
         tracks,
         used,
@@ -191,7 +243,14 @@ function pushPalmShape(tracks, used, arm, side, times, curlKeys, spreadKeys = nu
 }
 
 // Kaintha "point" pose: index finger stays extended (rest), all other fingers curl.
-function pushPointPose(tracks, used, arm, side, times, otherCurlKeys) {
+function pushPointPose(
+  tracks: KeyframeTrack[],
+  used: Set<string>,
+  arm: Armature,
+  side: 'left' | 'right',
+  times: number[],
+  otherCurlKeys: number[],
+) {
   for (const { bone, spec } of sideFingerRoots(arm, side)) {
     if (spec.suffix === 'IndexPalm') continue; // leave index at rest (straight)
     pushLocalQuat(
@@ -206,7 +265,7 @@ function pushPointPose(tracks, used, arm, side, times, otherCurlKeys) {
     );
     for (const [segmentIndex, child] of fingerChildChain(bone).entries()) {
       const segmentCurl =
-        FINGER_SEGMENT_CURL[segmentIndex] ?? FINGER_SEGMENT_CURL[FINGER_SEGMENT_CURL.length - 1];
+        FINGER_SEGMENT_CURL[segmentIndex] ?? FINGER_SEGMENT_CURL[FINGER_SEGMENT_CURL.length - 1]!;
       pushLocalQuat(
         tracks,
         used,
@@ -223,7 +282,7 @@ function pushPointPose(tracks, used, arm, side, times, otherCurlKeys) {
 
 // ---- Clip generators (each takes the resolved armature, returns AnimationClip|null) ----
 
-function buildWave(arm) {
+function buildWave(arm: Armature): THREE.AnimationClip | null {
   const sh = arm.resolved.rightUpperArm;
   const fa = arm.resolved.rightLowerArm;
   const hand = arm.resolved.rightHand;
@@ -242,8 +301,8 @@ function buildWave(arm) {
     [-16 * D2R, upY * 0.4, upZ * 0.4],
     [0, 0, 0],
   ];
-  const tracks = [];
-  const used = new Set();
+  const tracks: KeyframeTrack[] = [];
+  const used = new Set<string>();
   pushQuat(tracks, used, sh, t, shoulder);
   if (fa) {
     pushQuat(tracks, used, fa, t, [
@@ -343,7 +402,7 @@ function buildWave(arm) {
   return new THREE.AnimationClip('Wave', 3.5, tracks);
 }
 
-function buildNod(arm) {
+function buildNod(arm: Armature): THREE.AnimationClip | null {
   const h = arm.resolved.head;
   if (!h) return null;
   const a = 10 * D2R;
@@ -359,7 +418,7 @@ function buildNod(arm) {
   return new THREE.AnimationClip('Nod yes', 1.5, [quatTrack(h, t, eul)]);
 }
 
-function buildShake(arm) {
+function buildShake(arm: Armature): THREE.AnimationClip | null {
   const h = arm.resolved.head;
   if (!h) return null;
   const a = 15 * D2R;
@@ -376,7 +435,7 @@ function buildShake(arm) {
   return new THREE.AnimationClip('Shake no', 1.8, [quatTrack(h, t, eul)]);
 }
 
-function buildLookAround(arm) {
+function buildLookAround(arm: Armature): THREE.AnimationClip | null {
   const h = arm.resolved.head;
   if (!h) return null;
   const a = 22 * D2R;
@@ -393,13 +452,13 @@ function buildLookAround(arm) {
   return new THREE.AnimationClip('Look around', 4.0, [quatTrack(h, t, eul)]);
 }
 
-function buildShrug(arm) {
+function buildShrug(arm: Armature): THREE.AnimationClip | null {
   const L = arm.resolved.leftShoulder || arm.resolved.leftUpperArm;
   const R = arm.resolved.rightShoulder || arm.resolved.rightUpperArm;
   if (!L && !R) return null;
   const t = [0, 0.4, 0.9, 1.3, 1.6];
   const up = 14 * D2R;
-  const tracks = [];
+  const tracks: KeyframeTrack[] = [];
   if (L)
     tracks.push(
       quatTrack(L, t, [
@@ -423,7 +482,7 @@ function buildShrug(arm) {
   return new THREE.AnimationClip('Shrug', 1.6, tracks);
 }
 
-function buildBounce(arm) {
+function buildBounce(arm: Armature): THREE.AnimationClip | null {
   const hip = arm.resolved.hip;
   if (!hip) return null;
   const t = [0, 0.3, 0.6, 0.9, 1.2, 1.5, 1.8];
@@ -441,7 +500,7 @@ function buildBounce(arm) {
   return new THREE.AnimationClip('Bounce', 1.8, [posTrack(hip, t, ofs)]);
 }
 
-function buildDance(arm) {
+function buildDance(arm: Armature): THREE.AnimationClip | null {
   const hip = arm.resolved.hip;
   const spine = arm.resolved.spine || arm.resolved.chest;
   const lUA = arm.resolved.leftUpperArm;
@@ -450,8 +509,8 @@ function buildDance(arm) {
   const rHand = arm.resolved.rightHand;
   if (!hip && !spine && !lUA && !rUA) return null;
   const t = [0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0];
-  const tracks = [];
-  const used = new Set();
+  const tracks: KeyframeTrack[] = [];
+  const used = new Set<string>();
   if (hip) {
     const sway = 12 * D2R;
     tracks.push(
@@ -691,7 +750,7 @@ function buildDance(arm) {
   return new THREE.AnimationClip('Dance', 4.0, tracks);
 }
 
-function buildIdleVariation(arm) {
+function buildIdleVariation(arm: Armature): THREE.AnimationClip | null {
   const h = arm.resolved.head;
   const s = arm.resolved.spine;
   const lUA = arm.resolved.leftUpperArm;
@@ -702,8 +761,8 @@ function buildIdleVariation(arm) {
   const rHand = arm.resolved.rightHand;
   if (!h && !s && !lUA && !rUA) return null;
   const t = [0, 1.2, 2.4, 3.6, 4.8, 6.0];
-  const tracks = [];
-  const used = new Set();
+  const tracks: KeyframeTrack[] = [];
+  const used = new Set<string>();
   if (h) {
     const y = 5 * D2R;
     const x = 3 * D2R;
@@ -799,7 +858,7 @@ function buildIdleVariation(arm) {
   return new THREE.AnimationClip('Idle variation', 6.0, tracks);
 }
 
-function buildHeroEntrance(arm) {
+function buildHeroEntrance(arm: Armature): THREE.AnimationClip | null {
   const hip = arm.resolved.hip;
   const spine = arm.resolved.spine || arm.resolved.chest;
   const head = arm.resolved.head;
@@ -816,8 +875,8 @@ function buildHeroEntrance(arm) {
   if (!hip && !spine && !head && !lUA && !rUA) return null;
 
   const t = [0, 0.28, 0.55, 0.82, 1.1, 1.45, 1.85, 2.25, 2.6];
-  const tracks = [];
-  const used = new Set();
+  const tracks: KeyframeTrack[] = [];
+  const used = new Set<string>();
 
   pushPos(tracks, used, hip, t, [
     [0, 0, 0],
@@ -995,7 +1054,7 @@ function buildHeroEntrance(arm) {
   return new THREE.AnimationClip('Hero entrance', 2.6, tracks);
 }
 
-function buildClap(arm) {
+function buildClap(arm: Armature): THREE.AnimationClip | null {
   const spine = arm.resolved.spine || arm.resolved.chest;
   const head = arm.resolved.head;
   const lUA = arm.resolved.leftUpperArm;
@@ -1007,8 +1066,8 @@ function buildClap(arm) {
   if (!lUA && !rUA && !lLA && !rLA) return null;
 
   const t = [0, 0.22, 0.42, 0.62, 0.82, 1.02, 1.24, 1.52, 1.85];
-  const tracks = [];
-  const used = new Set();
+  const tracks: KeyframeTrack[] = [];
+  const used = new Set<string>();
 
   pushQuat(tracks, used, spine, t, [
     [0, 0, 0],
@@ -1120,7 +1179,7 @@ function buildClap(arm) {
   return new THREE.AnimationClip('Double clap', 1.85, tracks);
 }
 
-function buildPunchCombo(arm) {
+function buildPunchCombo(arm: Armature): THREE.AnimationClip | null {
   const hip = arm.resolved.hip;
   const spine = arm.resolved.spine || arm.resolved.chest;
   const head = arm.resolved.head;
@@ -1133,8 +1192,8 @@ function buildPunchCombo(arm) {
   if (!lUA && !rUA && !spine) return null;
 
   const t = [0, 0.18, 0.35, 0.55, 0.72, 0.95, 1.18, 1.42, 1.68, 1.95, 2.25];
-  const tracks = [];
-  const used = new Set();
+  const tracks: KeyframeTrack[] = [];
+  const used = new Set<string>();
 
   pushPos(tracks, used, hip, t, [
     [0, 0, 0],
@@ -1272,7 +1331,7 @@ function buildPunchCombo(arm) {
   return new THREE.AnimationClip('Punch combo', 2.25, tracks);
 }
 
-function buildJumpTwist(arm) {
+function buildJumpTwist(arm: Armature): THREE.AnimationClip | null {
   const hip = arm.resolved.hip;
   const spine = arm.resolved.spine || arm.resolved.chest;
   const head = arm.resolved.head;
@@ -1287,8 +1346,8 @@ function buildJumpTwist(arm) {
   if (!hip && !spine) return null;
 
   const t = [0, 0.22, 0.48, 0.72, 0.98, 1.2, 1.42, 1.7, 2.05];
-  const tracks = [];
-  const used = new Set();
+  const tracks: KeyframeTrack[] = [];
+  const used = new Set<string>();
 
   pushPos(tracks, used, hip, t, [
     [0, 0, 0],
@@ -1444,7 +1503,7 @@ function buildJumpTwist(arm) {
   return new THREE.AnimationClip('Jump twist', 2.05, tracks);
 }
 
-function buildBhangraDance(arm) {
+function buildBhangraDance(arm: Armature): THREE.AnimationClip | null {
   const hip = arm.resolved.hip;
   const spine = arm.resolved.spine || arm.resolved.chest;
   const head = arm.resolved.head;
@@ -1462,8 +1521,8 @@ function buildBhangraDance(arm) {
 
   // ~150 BPM dhol pulse → 8 beats over 3.2 s, two samples per beat.
   const t = [0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2];
-  const tracks = [];
-  const used = new Set();
+  const tracks: KeyframeTrack[] = [];
+  const used = new Set<string>();
 
   // Vertical pop — the defining Bhangra signature.
   const amp = 0.1;
@@ -1738,7 +1797,7 @@ function buildBhangraDance(arm) {
   return new THREE.AnimationClip('Bhangra dance', 3.2, tracks);
 }
 
-function buildSneakyWalk(arm) {
+function buildSneakyWalk(arm: Armature): THREE.AnimationClip | null {
   const hip = arm.resolved.hip;
   const spine = arm.resolved.spine || arm.resolved.chest;
   const head = arm.resolved.head;
@@ -1755,8 +1814,8 @@ function buildSneakyWalk(arm) {
   if (!hip && !lUL && !rUL && !spine) return null;
 
   const t = [0, 0.3, 0.6, 0.9, 1.2, 1.5, 1.8, 2.1, 2.4];
-  const tracks = [];
-  const used = new Set();
+  const tracks: KeyframeTrack[] = [];
+  const used = new Set<string>();
 
   pushPos(tracks, used, hip, t, [
     [0, 0, 0],
@@ -1934,7 +1993,7 @@ function buildSneakyWalk(arm) {
   return new THREE.AnimationClip('Sneaky walk', 2.4, tracks);
 }
 
-function buildThinkingGesture(arm) {
+function buildThinkingGesture(arm: Armature): THREE.AnimationClip | null {
   const hip = arm.resolved.hip;
   const spine = arm.resolved.spine || arm.resolved.chest;
   const head = arm.resolved.head;
@@ -1947,8 +2006,8 @@ function buildThinkingGesture(arm) {
   if (!head && !rUA && !rLA) return null;
 
   const t = [0, 0.35, 0.75, 1.15, 1.55, 2.05, 2.55, 3.0, 3.35];
-  const tracks = [];
-  const used = new Set();
+  const tracks: KeyframeTrack[] = [];
+  const used = new Set<string>();
 
   pushPos(tracks, used, hip, t, [
     [0, 0, 0],
@@ -2071,7 +2130,16 @@ function buildThinkingGesture(arm) {
   return new THREE.AnimationClip('Thinking pose', 3.35, tracks);
 }
 
-const GENERATORS = [
+interface Generator {
+  name: string;
+  needs: Role[];
+  build: (arm: Armature) => THREE.AnimationClip | null;
+  loop: boolean;
+  additive?: boolean;
+  anyOf?: boolean;
+}
+
+const GENERATORS: Generator[] = [
   { name: 'Wave', needs: ['rightUpperArm'], build: buildWave, loop: false },
   { name: 'Nod yes', needs: ['head'], build: buildNod, loop: false },
   { name: 'Shake no', needs: ['head'], build: buildShake, loop: false },
@@ -2150,9 +2218,24 @@ const GENERATORS = [
   },
 ];
 
-export function createProcAnimations(armature, mixer) {
-  const actions = new Map();
-  const status = []; // [{name, ready, missing[]}]
+export interface ClipStatus {
+  name: string;
+  ready: boolean;
+  missing: Role[];
+}
+
+export interface ProcAnimations {
+  actions: Map<string, AnimationAction>;
+  status: ClipStatus[];
+  gateInfo?: () => string;
+}
+
+export function createProcAnimations(
+  armature: Armature | null,
+  mixer: AnimationMixer,
+): ProcAnimations {
+  const actions = new Map<string, AnimationAction>();
+  const status: ClipStatus[] = [];
   if (!armature || !armature.hasSkeleton) {
     return { actions, status, gateInfo: () => 'No skeleton detected' };
   }
@@ -2172,7 +2255,7 @@ export function createProcAnimations(armature, mixer) {
         const additive = gen.additive !== false;
         if (additive) THREE.AnimationUtils.makeClipAdditive(clip);
         const action = additive
-          ? mixer.clipAction(clip, null, THREE.AdditiveAnimationBlendMode)
+          ? mixer.clipAction(clip, undefined, THREE.AdditiveAnimationBlendMode)
           : mixer.clipAction(clip);
         action.setLoop(gen.loop ? THREE.LoopRepeat : THREE.LoopOnce, Infinity);
         action.clampWhenFinished = !gen.loop;

@@ -1,4 +1,8 @@
-export const PRESETS = {
+import type { MorphIndex } from './morphs';
+
+export type MorphValues = Record<string, number>;
+
+export const PRESETS: Record<string, MorphValues> = {
   Neutral: {},
   Happy: {
     mouthSmileLeft: 0.8,
@@ -61,21 +65,27 @@ export const PRESETS = {
   },
 };
 
-export function tweenPreset(morphIndex, setMorph, getMorph, presetName, duration = 220) {
+export function tweenPreset(
+  morphIndex: MorphIndex,
+  setMorph: (morphIndex: MorphIndex, name: string, value: number) => void,
+  getMorph: (morphIndex: MorphIndex, name: string) => number,
+  presetName: string,
+  duration = 220,
+): Promise<void> {
   const target = PRESETS[presetName] ?? {};
   // Snapshot every ARKit-ish morph currently in the index so non-target morphs return to 0.
-  const startValues = new Map();
+  const startValues = new Map<string, number>();
   for (const name of morphIndex.byName.keys()) {
     startValues.set(name, getMorph(morphIndex, name));
   }
-  const endValues = new Map();
+  const endValues = new Map<string, number>();
   for (const name of morphIndex.byName.keys()) {
     endValues.set(name, target[name] ?? 0);
   }
 
   const t0 = performance.now();
   return new Promise((resolve) => {
-    function step(now) {
+    function step(now: number) {
       const t = Math.min(1, (now - t0) / duration);
       const e = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
       for (const [name, start] of startValues) {

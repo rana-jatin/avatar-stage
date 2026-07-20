@@ -1,3 +1,22 @@
+import type { Mesh, Object3D } from 'three';
+
+// A mesh that actually carries morph targets (three marks both fields optional).
+export type MorphMesh = Mesh & {
+  morphTargetDictionary: Record<string, number>;
+  morphTargetInfluences: number[];
+};
+
+export interface MorphTargetRef {
+  mesh: MorphMesh;
+  index: number;
+}
+
+export interface MorphIndex {
+  byName: Map<string, MorphTargetRef[]>;
+  allNames: string[];
+  arkit: string[];
+}
+
 const ARKIT_NAMES = new Set([
   'browDownLeft',
   'browDownRight',
@@ -53,7 +72,7 @@ const ARKIT_NAMES = new Set([
   'tongueOut',
 ]);
 
-const CUSTOM_MORPH_ALIASES = {
+const CUSTOM_MORPH_ALIASES: Record<string, string[]> = {
   'EYES CLOSE': ['eyeBlinkLeft', 'eyeBlinkRight'],
   mouth_right_up_smile: ['mouthSmileRight'],
   mouth_left_up_smile: ['mouthSmileLeft'],
@@ -74,17 +93,30 @@ const CUSTOM_MORPH_ALIASES = {
   'out left': ['eyeWideLeft'],
 };
 
-function addMorphTarget(byName, name, target) {
-  if (!byName.has(name)) byName.set(name, []);
-  byName.get(name).push(target);
+function addMorphTarget(
+  byName: Map<string, MorphTargetRef[]>,
+  name: string,
+  target: MorphTargetRef,
+) {
+  let list = byName.get(name);
+  if (!list) {
+    list = [];
+    byName.set(name, list);
+  }
+  list.push(target);
 }
 
-export function discoverMorphs(root) {
-  const byName = new Map();
+function isMorphMesh(obj: Object3D): obj is MorphMesh {
+  const mesh = obj as Mesh;
+  return Boolean(mesh.isMesh && mesh.morphTargetDictionary && mesh.morphTargetInfluences);
+}
+
+export function discoverMorphs(root: Object3D): MorphIndex {
+  const byName = new Map<string, MorphTargetRef[]>();
   root.traverse((obj) => {
-    if (!obj.isMesh || !obj.morphTargetDictionary || !obj.morphTargetInfluences) return;
+    if (!isMorphMesh(obj)) return;
     for (const [name, index] of Object.entries(obj.morphTargetDictionary)) {
-      const target = { mesh: obj, index };
+      const target: MorphTargetRef = { mesh: obj, index };
       addMorphTarget(byName, name, target);
       for (const alias of CUSTOM_MORPH_ALIASES[name] || []) {
         addMorphTarget(byName, alias, target);
@@ -96,7 +128,7 @@ export function discoverMorphs(root) {
   return { byName, allNames, arkit };
 }
 
-export function setMorph(morphIndex, name, value) {
+export function setMorph(morphIndex: MorphIndex, name: string, value: number): void {
   const targets = morphIndex.byName.get(name);
   if (!targets) return;
   const v = Math.max(0, Math.min(1, value));
@@ -105,14 +137,13 @@ export function setMorph(morphIndex, name, value) {
   }
 }
 
-export function getMorph(morphIndex, name) {
-  const targets = morphIndex.byName.get(name);
-  if (!targets || targets.length === 0) return 0;
-  const { mesh, index } = targets[0];
-  return mesh.morphTargetInfluences[index] ?? 0;
+export function getMorph(morphIndex: MorphIndex, name: string): number {
+  const first = morphIndex.byName.get(name)?.[0];
+  if (!first) return 0;
+  return first.mesh.morphTargetInfluences[first.index] ?? 0;
 }
 
-export function resetMorphs(morphIndex) {
+export function resetMorphs(morphIndex: MorphIndex): void {
   for (const [, targets] of morphIndex.byName) {
     for (const { mesh, index } of targets) {
       mesh.morphTargetInfluences[index] = 0;
@@ -120,7 +151,7 @@ export function resetMorphs(morphIndex) {
   }
 }
 
-const REGION_PREFIXES = [
+const REGION_PREFIXES: Array<[string, string[]]> = [
   ['Eyes', ['eyeBlink', 'eyeSquint', 'eyeWide', 'eyeLook']],
   ['Brows', ['brow']],
   ['Jaw', ['jaw']],
@@ -129,19 +160,19 @@ const REGION_PREFIXES = [
   ['Nose', ['nose']],
   ['Tongue', ['tongue']],
 ];
-export function groupByRegion(names) {
-  const groups = new Map(REGION_PREFIXES.map(([k]) => [k, []]));
+export function groupByRegion(names: string[]): Map<string, string[]> {
+  const groups = new Map<string, string[]>(REGION_PREFIXES.map(([k]) => [k, []]));
   groups.set('Other', []);
   for (const n of names) {
     let placed = false;
     for (const [region, prefixes] of REGION_PREFIXES) {
       if (prefixes.some((p) => n.toLowerCase().startsWith(p.toLowerCase()))) {
-        groups.get(region).push(n);
+        groups.get(region)?.push(n);
         placed = true;
         break;
       }
     }
-    if (!placed) groups.get('Other').push(n);
+    if (!placed) groups.get('Other')?.push(n);
   }
   for (const [k, v] of groups) if (v.length === 0) groups.delete(k);
   return groups;

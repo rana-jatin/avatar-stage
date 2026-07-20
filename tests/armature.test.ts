@@ -1,9 +1,10 @@
-import { describe, it, expect } from 'vitest';
+﻿import { describe, it, expect } from 'vitest';
 import * as THREE from 'three';
-import { detectArmature, ROLES } from '../src/armature.js';
-import { makeRig, makeSmurfRig, makeGarbageRig } from './helpers/rigs.js';
+import { detectArmature, ROLES } from '../src/armature';
+import type { Role } from '../src/armature';
+import { makeRig, makeSmurfRig, makeGarbageRig } from './helpers/rigs';
 
-const CORE_ROLES = [
+const CORE_ROLES: Role[] = [
   'hip',
   'spine',
   'head',
@@ -23,7 +24,7 @@ const CORE_ROLES = [
   'rightFoot',
 ];
 
-const PALM_ROLES = [
+const PALM_ROLES: Role[] = [
   'leftIndexPalm',
   'leftMiddlePalm',
   'leftRingPalm',
@@ -58,7 +59,7 @@ describe('smurf rig', () => {
       for (const role of ROLES) {
         expect(arm.resolved[role], `role ${role}`).toBeTruthy();
       }
-      expect(arm.resolved.head.name).toBe('head');
+      expect(arm.resolved.head?.name).toBe('head');
     });
   }
 
@@ -71,7 +72,7 @@ describe('smurf rig', () => {
     root.add(stray);
     const arm = detectArmature(root);
     expect(arm.rig).toBe('mixamo');
-    expect(arm.resolved.head.name).toBe('mixamorigHead');
+    expect(arm.resolved.head?.name).toBe('mixamorigHead');
   });
 });
 
@@ -81,8 +82,8 @@ describe('unknown rigs', () => {
     expect(arm.hasSkeleton).toBe(true);
     expect(arm.rig).toBe('unknown');
     // Root of the chain becomes the hip, the tip becomes the head.
-    expect(arm.resolved.hip.name).toBe('alpha');
-    expect(arm.resolved.head.name).toBe('gamma');
+    expect(arm.resolved.hip?.name).toBe('alpha');
+    expect(arm.resolved.head?.name).toBe('gamma');
   });
 
   it('returns a safe empty armature when there is no skeleton', () => {
@@ -101,7 +102,7 @@ describe('setOverride', () => {
   it('remaps a role to another bone and clears it', () => {
     const arm = detectArmature(makeRig('rpm'));
     expect(arm.setOverride('head', 'Neck')).toBe(true);
-    expect(arm.getRole('head').name).toBe('Neck');
+    expect(arm.getRole('head')?.name).toBe('Neck');
     expect(arm.setOverride('head', '')).toBe(true);
     expect(arm.getRole('head')).toBeNull();
     expect(arm.setOverride('head', null)).toBe(true);
@@ -111,6 +112,6 @@ describe('setOverride', () => {
     const arm = detectArmature(makeRig('rpm'));
     expect(arm.setOverride('tail', 'Head')).toBe(false);
     expect(arm.setOverride('head', 'NoSuchBone')).toBe(false);
-    expect(arm.getRole('head').name).toBe('Head');
+    expect(arm.getRole('head')?.name).toBe('Head');
   });
 });

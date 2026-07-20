@@ -1,8 +1,8 @@
-import { describe, it, expect } from 'vitest';
+﻿import { describe, it, expect } from 'vitest';
 import * as THREE from 'three';
-import { createProcAnimations } from '../src/procAnim.js';
-import { detectArmature } from '../src/armature.js';
-import { makeSmurfRig } from './helpers/rigs.js';
+import { createProcAnimations } from '../src/procAnim';
+import { detectArmature } from '../src/armature';
+import { makeSmurfRig } from './helpers/rigs';
 
 const EXPECTED_CLIPS = [
   'Wave',
@@ -29,9 +29,9 @@ function makeFullSetup() {
   return { root, armature, mixer };
 }
 
-const round6 = (x) => Math.round(x * 1e6) / 1e6;
+const round6 = (x: number) => Math.round(x * 1e6) / 1e6;
 
-function serializeClip(clip) {
+function serializeClip(clip: THREE.AnimationClip) {
   return clip.tracks.map((t) => ({
     name: t.name,
     times: Array.from(t.times, round6),
@@ -72,7 +72,7 @@ describe('createProcAnimations on the full smurf rig', () => {
     // Freezes every generated track (post-additive conversion) so refactors —
     // in particular the TypeScript migration — cannot silently change the
     // animation data. Only update this snapshot for a deliberate re-tune.
-    const serialized = {};
+    const serialized: Record<string, ReturnType<typeof serializeClip>> = {};
     for (const [name, action] of actions) {
       serialized[name] = serializeClip(action.getClip());
     }
@@ -99,10 +99,10 @@ describe('createProcAnimations on partial rigs', () => {
     const { actions, status } = createProcAnimations(armature, mixer);
 
     const byName = new Map(status.map((s) => [s.name, s]));
-    expect(byName.get('Wave').ready).toBe(false);
-    expect(byName.get('Wave').missing).toEqual(['rightUpperArm']);
-    expect(byName.get('Nod yes').ready).toBe(true);
-    expect(byName.get('Bounce').ready).toBe(true);
+    expect(byName.get('Wave')?.ready).toBe(false);
+    expect(byName.get('Wave')?.missing).toEqual(['rightUpperArm']);
+    expect(byName.get('Nod yes')?.ready).toBe(true);
+    expect(byName.get('Bounce')?.ready).toBe(true);
     expect(actions.has('Wave')).toBe(false);
     expect(actions.has('Nod yes')).toBe(true);
   });

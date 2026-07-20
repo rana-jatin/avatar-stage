@@ -1,8 +1,8 @@
-import { describe, it, expect, vi, afterEach } from 'vitest';
+﻿import { describe, it, expect, vi, afterEach } from 'vitest';
 import * as THREE from 'three';
-import { PRESETS, tweenPreset } from '../src/presets.js';
-import { discoverMorphs, setMorph, getMorph } from '../src/morphs.js';
-import { makeMorphMesh, installFakeRaf } from './helpers/rigs.js';
+import { PRESETS, tweenPreset } from '../src/presets';
+import { discoverMorphs, setMorph, getMorph } from '../src/morphs';
+import { makeMorphMesh, installFakeRaf } from './helpers/rigs';
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -14,7 +14,7 @@ describe('PRESETS', () => {
   });
 
   it('uses only valid ARKit names with values in [0, 1]', () => {
-    const used = new Set();
+    const used = new Set<string>();
     for (const preset of Object.values(PRESETS)) {
       for (const [name, v] of Object.entries(preset)) {
         used.add(name);
@@ -23,7 +23,7 @@ describe('PRESETS', () => {
       }
     }
     const root = new THREE.Group();
-    root.add(makeMorphMesh(Object.fromEntries([...used].map((n) => [n, 0]))));
+    root.add(makeMorphMesh(Object.fromEntries([...used].map((n): [string, number] => [n, 0]))));
     const idx = discoverMorphs(root);
     for (const name of used) {
       expect(idx.arkit, `${name} should be an ARKit blendshape`).toContain(name);
@@ -47,9 +47,10 @@ describe('tweenPreset', () => {
     raf.advance(100);
     raf.advance(100); // past the 200ms duration -> final frame
     await done;
-    expect(getMorph(idx, 'mouthSmileLeft')).toBeCloseTo(PRESETS.Happy.mouthSmileLeft);
-    expect(getMorph(idx, 'mouthSmileRight')).toBeCloseTo(PRESETS.Happy.mouthSmileRight);
-    expect(getMorph(idx, 'browInnerUp')).toBeCloseTo(PRESETS.Happy.browInnerUp);
+    const happy = PRESETS.Happy!;
+    expect(getMorph(idx, 'mouthSmileLeft')).toBeCloseTo(happy.mouthSmileLeft!);
+    expect(getMorph(idx, 'mouthSmileRight')).toBeCloseTo(happy.mouthSmileRight!);
+    expect(getMorph(idx, 'browInnerUp')).toBeCloseTo(happy.browInnerUp!);
   });
 
   it('returns morphs outside the preset to zero', async () => {

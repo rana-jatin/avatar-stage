@@ -1,9 +1,9 @@
-import { describe, it, expect } from 'vitest';
+﻿import { describe, it, expect } from 'vitest';
 import * as THREE from 'three';
-import { discoverMorphs, setMorph, getMorph, resetMorphs, groupByRegion } from '../src/morphs.js';
-import { makeMorphMesh } from './helpers/rigs.js';
+import { discoverMorphs, setMorph, getMorph, resetMorphs, groupByRegion } from '../src/morphs';
+import { makeMorphMesh } from './helpers/rigs';
 
-function indexOf(...meshes) {
+function indexOf(...meshes: THREE.Object3D[]) {
   const root = new THREE.Group();
   for (const m of meshes) root.add(m);
   return discoverMorphs(root);

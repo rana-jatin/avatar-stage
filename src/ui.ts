@@ -1,19 +1,34 @@
-import { setMorph, getMorph, resetMorphs, groupByRegion } from './morphs.js';
-import { PRESETS, tweenPreset } from './presets.js';
-import { textToVisemes, playVisemeSequence } from './lipsync.js';
-import { ROLES } from './armature.js';
+import { setMorph, getMorph, resetMorphs, groupByRegion } from './morphs';
+import { PRESETS, tweenPreset } from './presets';
+import { textToVisemes, playVisemeSequence } from './lipsync';
+import { ROLES } from './armature';
+import type { Viewer } from './viewer';
+import type { IdleController } from './idle';
+import type { AnimationAction } from 'three';
 
-function el(tag, props = {}, children = []) {
+export interface BuildUIContext {
+  viewer: Viewer;
+  idle: IdleController;
+  onUploadFile: (file: File) => void | Promise<void>;
+}
+
+type Child = Node | string | number | null | undefined;
+
+function el<K extends keyof HTMLElementTagNameMap>(
+  tag: K,
+  props: Record<string, unknown> = {},
+  children: Child | Child[] = [],
+): HTMLElementTagNameMap[K] {
   const e = document.createElement(tag);
   Object.assign(e, props);
-  for (const c of [].concat(children)) {
+  for (const c of ([] as Child[]).concat(children)) {
     if (c == null) continue;
-    e.append(c.nodeType ? c : document.createTextNode(c));
+    e.append(c instanceof Node ? c : document.createTextNode(String(c)));
   }
   return e;
 }
 
-function panel(title, open = false) {
+function panel(title: string, open = false) {
   const d = el('details', { className: 'panel', open });
   d.append(el('summary', {}, title));
   const body = el('div', { className: 'body' });
@@ -21,7 +36,7 @@ function panel(title, open = false) {
   return { root: d, body };
 }
 
-const ROLE_LABELS = {
+const ROLE_LABELS: Record<string, string> = {
   hip: 'Hip',
   spine: 'Spine',
   chest: 'Chest',
@@ -54,7 +69,7 @@ const ROLE_LABELS = {
   rightFoot: 'R Foot',
 };
 
-export function buildUI(container, ctx) {
+export function buildUI(container: HTMLElement, ctx: BuildUIContext) {
   const { viewer, idle, onUploadFile } = ctx;
   const {
     animations,
@@ -75,7 +90,7 @@ export function buildUI(container, ctx) {
   uploadBtn.addEventListener('click', () => fileInput.click());
   fileInput.addEventListener('change', () => {
     const f = fileInput.files?.[0];
-    if (f) onUploadFile(f);
+    if (f) void onUploadFile(f);
     fileInput.value = '';
   });
   const fileLabel = el(
@@ -134,8 +149,8 @@ export function buildUI(container, ctx) {
 
   // ----- Animations -----
   const anim = panel('Animations', true);
-  let currentAction = null;
-  const animBtns = new Map();
+  let currentAction: AnimationAction | null = null;
+  const animBtns = new Map<AnimationAction, HTMLButtonElement>();
 
   function stopAnimation() {
     if (currentAction) {
@@ -148,7 +163,7 @@ export function buildUI(container, ctx) {
     idle.suppressHeadSway(false);
   }
 
-  function playAnimation(action) {
+  function playAnimation(action: AnimationAction) {
     if (currentAction === action) return;
     if (currentAction) {
       currentAction.fadeOut(0.25);
@@ -187,20 +202,20 @@ export function buildUI(container, ctx) {
   if (!armature || !armature.hasSkeleton) {
     proc.body.append(el('div', { className: 'empty' }, 'Requires a skinned mesh with a skeleton.'));
   } else {
-    let currentProc = null;
+    let currentProc: AnimationAction | null = null;
     function stopProc() {
       if (currentProc) {
         currentProc.fadeOut(0.25);
         setTimeout(() => {
           try {
-            currentProc.stop();
+            currentProc?.stop();
           } catch {}
         }, 260);
         currentProc = null;
       }
       idle.suppressHeadSway(false);
     }
-    function playProc(action) {
+    function playProc(action: AnimationAction) {
       if (currentProc === action) return;
       if (currentProc) currentProc.fadeOut(0.25);
       action.reset().setEffectiveWeight(1).fadeIn(0.25).play();
@@ -229,17 +244,21 @@ export function buildUI(container, ctx) {
   container.append(proc.root);
 
   // ----- Expressions -----
+  // Reassigned by the blendshape-sliders panel below; the preset buttons only
+  // run it after user interaction, well after buildUI completes.
+  let refreshSliders: () => void = () => {};
   const exp = panel('Expression presets', false);
   const expGrid = el('div', { className: 'btn-grid' });
   let tweening = false;
   for (const name of Object.keys(PRESETS)) {
     const b = el('button', { className: 'btn' }, name);
-    b.addEventListener('click', async () => {
+    b.addEventListener('click', () => {
       if (tweening) return;
       tweening = true;
-      await tweenPreset(morphIndex, setMorph, getMorph, name);
-      tweening = false;
-      refreshSliders();
+      void tweenPreset(morphIndex, setMorph, getMorph, name).then(() => {
+        tweening = false;
+        refreshSliders();
+      });
     });
     expGrid.append(b);
   }
@@ -248,7 +267,7 @@ export function buildUI(container, ctx) {
 
   // ----- Idle behaviors -----
   const idleP = panel('Idle behaviors', false);
-  const toggle = (label, initial, onChange) => {
+  const toggle = (label: string, initial: boolean, onChange: (v: boolean) => void) => {
     const row = el('label', { className: 'toggle-row' });
     const cb = el('input', { type: 'checkbox', checked: initial });
     cb.addEventListener('change', () => onChange(cb.checked));
@@ -277,7 +296,7 @@ export function buildUI(container, ctx) {
   const lip = panel('Lip-sync test (no audio)', false);
   const lipInput = el('input', { type: 'text', className: 'search', value: 'hello world' });
   const lipBtn = el('button', { className: 'btn wide' }, 'Play viseme sequence');
-  let cancelLip = null;
+  let cancelLip: (() => void) | null = null;
   lipBtn.addEventListener('click', () => {
     if (cancelLip) {
       cancelLip();
@@ -305,9 +324,14 @@ export function buildUI(container, ctx) {
 
     const listed = morphIndex.arkit.length > 0 ? morphIndex.arkit : morphIndex.allNames;
     const groups = groupByRegion(listed);
-    const sliderRows = [];
+    const sliderRows: Array<{
+      row: HTMLDivElement;
+      input: HTMLInputElement;
+      val: HTMLSpanElement;
+      name: string;
+    }> = [];
 
-    function makeRow(name) {
+    function makeRow(name: string) {
       const row = el('div', { className: 'slider-row' });
       const labelEl = el('label', { title: name }, name);
       const input = el('input', { type: 'range', min: 0, max: 1, step: 0.01 });
@@ -337,15 +361,13 @@ export function buildUI(container, ctx) {
       }
     });
 
-    function refreshSliders() {
+    refreshSliders = () => {
       for (const { input, val, name } of sliderRows) {
         const v = getMorph(morphIndex, name);
         input.value = v.toFixed(2);
         val.textContent = v.toFixed(2);
       }
-    }
-    // Expose refresh to expression-preset callback above.
-    container.refreshSliders = refreshSliders;
+    };
 
     const resetBtn = el('button', { className: 'btn danger wide' }, 'Reset all morphs');
     resetBtn.style.marginTop = '8px';
@@ -356,9 +378,4 @@ export function buildUI(container, ctx) {
     sl.body.append(resetBtn);
   }
   container.append(sl.root);
-
-  // Allow expression presets to refresh sliders without circular ref.
-  function refreshSliders() {
-    if (typeof container.refreshSliders === 'function') container.refreshSliders();
-  }
 }

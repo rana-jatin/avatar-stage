@@ -7,6 +7,8 @@
 //      `Bone` / `Bone.001`–`Bone.127` / `head`. (GLTFLoader may strip the dot
 //      from bone names, so each entry lists both spellings.)
 
+import type { Bone, Object3D, SkinnedMesh } from 'three';
+
 const ROLE_ALIASES = {
   hip: [
     'Hips',
@@ -260,9 +262,22 @@ const ROLE_ALIASES = {
     'foot_r.x',
     'DEF-foot.R',
   ],
-};
+} satisfies Record<string, string[]>;
 
-const SMURF_ROLE_MAP = {
+export type Role = keyof typeof ROLE_ALIASES;
+export type ResolvedRoles = Record<Role, Bone | null>;
+
+export interface Armature {
+  bones: Map<string, Bone>;
+  root: Bone | null;
+  resolved: ResolvedRoles;
+  rig: string;
+  hasSkeleton: boolean;
+  setOverride(role: string, boneName: string | null): boolean;
+  getRole(role: Role): Bone | null;
+}
+
+const SMURF_ROLE_MAP: Record<Role, string | string[]> = {
   hip: ['Bone001', 'Bone.001'],
   spine: ['Bone002', 'Bone.002'],
   chest: ['Bone002', 'Bone.002'],
@@ -295,10 +310,10 @@ const SMURF_ROLE_MAP = {
   rightFoot: ['Bone046', 'Bone.046'],
 };
 
-export const ROLES = Object.keys(ROLE_ALIASES);
+export const ROLES = Object.keys(ROLE_ALIASES) as Role[];
 
 // Rig family is inferred from which alias matched the head bone.
-const RIG_SIGNATURES = [
+const RIG_SIGNATURES: Array<{ rig: string; test: (n: string) => boolean }> = [
   { rig: 'mixamo', test: (n) => n.startsWith('mixamorig') },
   { rig: 'cc4', test: (n) => n.startsWith('CC_Base_') },
   { rig: 'vroid', test: (n) => n.startsWith('J_Bip_') },
@@ -306,59 +321,67 @@ const RIG_SIGNATURES = [
   { rig: 'rpm', test: (n) => n === 'Head' || n === 'Hips' },
 ];
 
-function inferRig(headName) {
+function inferRig(headName: string | undefined): string {
   if (!headName) return 'unknown';
   for (const { rig, test } of RIG_SIGNATURES) if (test(headName)) return rig;
   return 'unknown';
 }
 
-function resolveBoneAlias(bones, aliases) {
-  for (const name of [].concat(aliases)) {
+function isBone(o: Object3D | null | undefined): o is Bone {
+  return Boolean(o && (o as Bone).isBone);
+}
+
+function resolveBoneAlias(bones: Map<string, Bone>, aliases: string | string[]): Bone | null {
+  const list = ([] as string[]).concat(aliases);
+  for (const name of list) {
     const bone = bones.get(name);
     if (bone) return bone;
   }
-  const lowerAliases = new Set([].concat(aliases).map((name) => String(name).toLowerCase()));
+  const lowerAliases = new Set(list.map((name) => name.toLowerCase()));
   for (const [name, bone] of bones) {
     if (lowerAliases.has(name.toLowerCase())) return bone;
   }
   return null;
 }
 
-function collectBones(root) {
-  const bones = new Map();
-  let firstSkeletonRoot = null;
+function collectBones(root: Object3D): { bones: Map<string, Bone>; firstBone: Bone | null } {
+  const bones = new Map<string, Bone>();
+  let firstSkeletonRoot: Bone | null = null;
   root.traverse((o) => {
-    if (o.isBone) {
+    if (isBone(o)) {
       bones.set(o.name, o);
       if (!firstSkeletonRoot) firstSkeletonRoot = o;
-    } else if (o.isSkinnedMesh && o.skeleton && !firstSkeletonRoot) {
-      firstSkeletonRoot = o.skeleton.bones[0];
+    } else if ((o as SkinnedMesh).isSkinnedMesh && !firstSkeletonRoot) {
+      firstSkeletonRoot = (o as SkinnedMesh).skeleton?.bones[0] ?? null;
     }
   });
   return { bones, firstBone: firstSkeletonRoot };
 }
 
 // Walk upward to find the topmost ancestor that's still a bone.
-function rootBone(bone) {
+function rootBone(bone: Bone): Bone {
   let cur = bone;
-  while (cur.parent && cur.parent.isBone) cur = cur.parent;
+  while (isBone(cur.parent)) cur = cur.parent;
   return cur;
 }
 
 // Choose the longest single-child descendant chain — typically the spine.
-function longestChain(bone) {
+function longestChain(bone: Bone): Bone[] {
   const chain = [bone];
   let cur = bone;
-  while (cur.children && cur.children.length > 0) {
-    const boneChildren = cur.children.filter((c) => c.isBone);
-    if (boneChildren.length === 0) break;
+  for (;;) {
+    const boneChildren = cur.children.filter(isBone);
+    const first = boneChildren[0];
+    if (!first) break;
     // Prefer the child whose subtree is the deepest.
-    let best = boneChildren[0];
+    let best = first;
     let bestDepth = depth(best);
     for (let i = 1; i < boneChildren.length; i++) {
-      const d = depth(boneChildren[i]);
+      const candidate = boneChildren[i];
+      if (!candidate) continue;
+      const d = depth(candidate);
       if (d > bestDepth) {
-        best = boneChildren[i];
+        best = candidate;
         bestDepth = d;
       }
     }
@@ -368,35 +391,36 @@ function longestChain(bone) {
   return chain;
 }
 
-function depth(bone) {
+function depth(bone: Bone): number {
   let d = 1;
-  for (const c of bone.children) if (c.isBone) d = Math.max(d, 1 + depth(c));
+  for (const c of bone.children) if (isBone(c)) d = Math.max(d, 1 + depth(c));
   return d;
 }
 
 // Fallback: identify left vs right by name suffix/infix.
-function isLeftName(n) {
+function isLeftName(n: string) {
   return /(_l|\.L|Left|_L_|_left)/i.test(n);
 }
-function isRightName(n) {
+function isRightName(n: string) {
   return /(_r|\.R|Right|_R_|_right)/i.test(n);
 }
 
-function emptyResolved() {
-  const out = {};
+function emptyResolved(): ResolvedRoles {
+  const out = {} as ResolvedRoles;
   for (const role of ROLES) out[role] = null;
   return out;
 }
 
 // Strategy 1: alias lookup + hierarchy/keyword fallbacks for standard rigs.
-function resolveGeneric(bones, firstBone) {
+function resolveGeneric(bones: Map<string, Bone>, firstBone: Bone): ResolvedRoles {
   const resolved = emptyResolved();
 
   // 1) Alias lookup.
   for (const role of ROLES) {
     for (const alias of ROLE_ALIASES[role]) {
-      if (bones.has(alias)) {
-        resolved[role] = bones.get(alias);
+      const bone = bones.get(alias);
+      if (bone) {
+        resolved[role] = bone;
         break;
       }
     }
@@ -410,26 +434,24 @@ function resolveGeneric(bones, firstBone) {
     const chain = longestChain(hip);
     // chain[0] = hip; chain[1] = spine; ... last bone = head/neck candidate.
     if (chain.length >= 4) {
-      resolved.spine = resolved.spine || chain[1];
-      resolved.chest = resolved.chest || chain[Math.min(2, chain.length - 1)];
-      resolved.head = resolved.head || chain[chain.length - 1];
-      resolved.neck = resolved.neck || chain[chain.length - 2];
+      resolved.spine = resolved.spine || chain[1] || null;
+      resolved.chest = resolved.chest || chain[Math.min(2, chain.length - 1)] || null;
+      resolved.head = resolved.head || chain[chain.length - 1] || null;
+      resolved.neck = resolved.neck || chain[chain.length - 2] || null;
     } else if (chain.length >= 2) {
-      resolved.spine = resolved.spine || chain[1];
-      resolved.head = resolved.head || chain[chain.length - 1];
+      resolved.spine = resolved.spine || chain[1] || null;
+      resolved.head = resolved.head || chain[chain.length - 1] || null;
     }
   }
 
   // 3) Left/right limbs: if not found by alias, scan all bones by keyword + side.
-  function findByKeywords(role, keywords, side) {
+  function findByKeywords(role: Role, keywords: string[], side: 'left' | 'right') {
     if (resolved[role]) return;
     for (const [name, b] of bones) {
       const lower = name.toLowerCase();
       if (!keywords.some((k) => lower.includes(k))) continue;
-      const left = isLeftName(name);
-      const right = isRightName(name);
-      if (side === 'left' && !left) continue;
-      if (side === 'right' && !right) continue;
+      if (side === 'left' && !isLeftName(name)) continue;
+      if (side === 'right' && !isRightName(name)) continue;
       resolved[role] = b;
       return;
     }
@@ -453,22 +475,22 @@ function resolveGeneric(bones, firstBone) {
 }
 
 // Strategy 2: the bundled smurf-style rig (numbered bones).
-function resolveSmurf(bones) {
+function resolveSmurf(bones: Map<string, Bone>): ResolvedRoles {
   const resolved = emptyResolved();
-  for (const [role, aliases] of Object.entries(SMURF_ROLE_MAP)) {
-    const bone = resolveBoneAlias(bones, aliases);
+  for (const role of ROLES) {
+    const bone = resolveBoneAlias(bones, SMURF_ROLE_MAP[role]);
     if (bone) resolved[role] = bone;
   }
   return resolved;
 }
 
-function countResolved(resolved) {
+function countResolved(resolved: ResolvedRoles): number {
   let n = 0;
   for (const role of ROLES) if (resolved[role]) n++;
   return n;
 }
 
-export function detectArmature(root) {
+export function detectArmature(root: Object3D): Armature {
   const { bones, firstBone } = collectBones(root);
 
   if (!firstBone || bones.size === 0) {
@@ -513,14 +535,15 @@ export function detectArmature(root) {
     // Pass '' / null to clear the role. Returns false for unknown roles or
     // bone names so the UI can keep the previous selection.
     setOverride(role, boneName) {
-      if (!ROLES.includes(role)) return false;
+      if (!(ROLES as string[]).includes(role)) return false;
+      const r = role as Role;
       if (boneName === '' || boneName == null) {
-        resolved[role] = null;
+        resolved[r] = null;
         return true;
       }
       const b = bones.get(boneName);
       if (!b) return false;
-      resolved[role] = b;
+      resolved[r] = b;
       return true;
     },
 

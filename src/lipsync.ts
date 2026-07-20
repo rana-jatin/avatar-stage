@@ -2,9 +2,27 @@
 // Adapted from the TalkingHead library's viseme timing concept; values are reduced/empirical
 // because we have no true Oculus visemes, only ARKit blendshapes to approximate them.
 
-import { setMorph } from './morphs.js';
+import { setMorph } from './morphs';
+import type { MorphIndex } from './morphs';
 
-export const VISEME_TO_ARKIT = {
+export type Viseme =
+  | 'PP'
+  | 'FF'
+  | 'TH'
+  | 'DD'
+  | 'KK'
+  | 'CH'
+  | 'SS'
+  | 'NN'
+  | 'RR'
+  | 'AA'
+  | 'E'
+  | 'I'
+  | 'O'
+  | 'U'
+  | 'sil';
+
+export const VISEME_TO_ARKIT: Record<Viseme, Record<string, number>> = {
   PP: { mouthPucker: 0.4, mouthClose: 0.6, mouthRollLower: 0.3, mouthRollUpper: 0.3 },
   FF: { mouthFunnel: 0.3, mouthLowerDownLeft: 0.3, mouthLowerDownRight: 0.3 },
   TH: { tongueOut: 0.3, jawOpen: 0.2 },
@@ -23,7 +41,7 @@ export const VISEME_TO_ARKIT = {
 };
 
 // Letter -> viseme (rough English mapping borrowed from TalkingHead's lipsync-en intent).
-const LETTER_TO_VISEME = {
+const LETTER_TO_VISEME: Record<string, Viseme> = {
   a: 'AA',
   e: 'E',
   i: 'I',
@@ -52,11 +70,12 @@ const LETTER_TO_VISEME = {
   x: 'KK',
 };
 
-export function textToVisemes(text) {
-  const out = [];
+export function textToVisemes(text: string): Viseme[] {
+  const out: Viseme[] = [];
   const clean = String(text).toLowerCase();
   for (let i = 0; i < clean.length; i++) {
     const ch = clean[i];
+    if (!ch) continue;
     if (ch === ' ' || ch === '.' || ch === ',') {
       out.push('sil');
       continue;
@@ -78,29 +97,34 @@ export function textToVisemes(text) {
   return out;
 }
 
-const ALL_LIPSYNC_MORPHS = new Set();
+const ALL_LIPSYNC_MORPHS = new Set<string>();
 for (const v of Object.values(VISEME_TO_ARKIT)) {
   for (const k of Object.keys(v)) ALL_LIPSYNC_MORPHS.add(k);
 }
 
-function applyViseme(morphIndex, code, intensity = 1) {
+function applyViseme(morphIndex: MorphIndex, code: Viseme, intensity = 1) {
   const target = VISEME_TO_ARKIT[code] ?? {};
   for (const morph of ALL_LIPSYNC_MORPHS) {
     setMorph(morphIndex, morph, (target[morph] ?? 0) * intensity);
   }
 }
 
-function clearVisemes(morphIndex) {
+function clearVisemes(morphIndex: MorphIndex) {
   for (const morph of ALL_LIPSYNC_MORPHS) setMorph(morphIndex, morph, 0);
 }
 
 // Plays a viseme sequence on a fixed clock — no audio. Useful to verify the remap visually.
-export function playVisemeSequence(morphIndex, visemes, msPerViseme = 90) {
+// Returns a cancel function that clears the mouth immediately.
+export function playVisemeSequence(
+  morphIndex: MorphIndex,
+  visemes: Viseme[],
+  msPerViseme = 90,
+): () => void {
   let i = 0;
   let cancelled = false;
   const t0 = performance.now();
 
-  function step(now) {
+  function step(now: number) {
     if (cancelled) return;
     const idx = Math.floor((now - t0) / msPerViseme);
     if (idx >= visemes.length) {
@@ -109,7 +133,8 @@ export function playVisemeSequence(morphIndex, visemes, msPerViseme = 90) {
     }
     if (idx !== i) {
       i = idx;
-      applyViseme(morphIndex, visemes[i]);
+      const code = visemes[i];
+      if (code) applyViseme(morphIndex, code);
     }
     requestAnimationFrame(step);
   }
@@ -121,9 +146,9 @@ export function playVisemeSequence(morphIndex, visemes, msPerViseme = 90) {
 }
 
 // Placeholder for future TTS hookup — same signatures TalkingHead uses.
-export async function speak(_text) {
+export async function speak(_text: string) {
   /* not implemented */
 }
-export async function speakAudio(_payload) {
+export async function speakAudio(_payload: unknown) {
   /* not implemented */
 }

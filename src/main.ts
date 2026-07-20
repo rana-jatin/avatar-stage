@@ -1,39 +1,46 @@
-import { createViewer } from './viewer.js';
-import { createIdle } from './idle.js';
-import { buildUI } from './ui.js';
+import { createViewer } from './viewer';
+import type { Viewer } from './viewer';
+import { createIdle } from './idle';
+import { buildUI } from './ui';
 
 // Bundled demo model, served from public/. BASE_URL keeps the path correct
 // when the site is deployed under a sub-path (e.g. GitHub Pages).
 const DEMO_GLB_URL = `${import.meta.env.BASE_URL}models/demo-avatar.glb`;
 const DEMO_GLB_NAME = 'demo-avatar.glb';
 
-const canvas = document.getElementById('stage');
-const panelsEl = document.getElementById('panels');
-const statusEl = document.getElementById('status');
+function mustGet<T extends HTMLElement>(id: string): T {
+  const node = document.getElementById(id);
+  if (!node) throw new Error(`missing #${id} in index.html`);
+  return node as T;
+}
 
-function setStatus(msg) {
+const canvas = mustGet<HTMLCanvasElement>('stage');
+const panelsEl = mustGet<HTMLElement>('panels');
+const statusEl = mustGet<HTMLElement>('status');
+
+function setStatus(msg: string) {
   statusEl.textContent = msg;
 }
 
 (async () => {
-  const viewer = await createViewer(canvas, setStatus);
+  const viewer = createViewer(canvas, setStatus);
 
   // Persistent idle controller — rebinds to each new armature.
   const idle = createIdle(null, null);
   viewer.setIdleUpdate(idle.update);
 
-  async function onUploadFile(file) {
+  async function onUploadFile(file: File) {
     setStatus(`Loading ${file.name}…`);
     try {
       const buf = await file.arrayBuffer();
       await viewer.loadGLB(buf, file.name);
     } catch (err) {
       console.error(err);
-      setStatus(`Failed to load ${file.name}: ${err.message || err}`);
+      setStatus(`Failed to load ${file.name}: ${err instanceof Error ? err.message : String(err)}`);
     }
   }
 
-  viewer.onModelLoaded = (v) => {
+  viewer.onModelLoaded = (v: Viewer) => {
     idle.rebind(v.armature, v.morphIndex);
     buildUI(panelsEl, { viewer: v, idle, onUploadFile });
     const counts = [];
@@ -49,7 +56,7 @@ function setStatus(msg) {
   canvas.addEventListener('drop', (e) => {
     e.preventDefault();
     const file = e.dataTransfer?.files?.[0];
-    if (file && /\.(glb|gltf)$/i.test(file.name)) onUploadFile(file);
+    if (file && /\.(glb|gltf)$/i.test(file.name)) void onUploadFile(file);
   });
 
   // Render the upload-only UI immediately so the user can pick a file even if

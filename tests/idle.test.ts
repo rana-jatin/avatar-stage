@@ -1,8 +1,8 @@
-import { describe, it, expect } from 'vitest';
-import { createIdle } from '../src/idle.js';
-import { detectArmature } from '../src/armature.js';
-import { discoverMorphs, getMorph } from '../src/morphs.js';
-import { makeRig, makeMorphMesh } from './helpers/rigs.js';
+﻿import { describe, it, expect } from 'vitest';
+import { createIdle } from '../src/idle';
+import { detectArmature } from '../src/armature';
+import { discoverMorphs, getMorph } from '../src/morphs';
+import { makeRig, makeMorphMesh } from './helpers/rigs';
 
 function makeContext() {
   const root = makeRig('rpm');
@@ -45,7 +45,7 @@ describe('breathing', () => {
   it('modulates the spine around its base rotation and restores it when disabled', () => {
     const { armature, morphIndex } = makeContext();
     const idle = createIdle(armature, morphIndex);
-    const spine = idle.spineBone;
+    const spine = idle.spineBone!;
     const base = spine.rotation.x;
 
     idle.update(1); // sin(pi/2) = 1 -> maximum amplitude
@@ -61,7 +61,7 @@ describe('head sway', () => {
   it('sways the head and eases back when suppressed', () => {
     const { armature, morphIndex } = makeContext();
     const idle = createIdle(armature, morphIndex);
-    const head = idle.headBone;
+    const head = idle.headBone!;
     const baseY = head.rotation.y;
 
     idle.update(1);
@@ -89,6 +89,6 @@ describe('rebind', () => {
     const idle = createIdle(armature, morphIndex);
     armature.setOverride('head', 'Neck');
     idle.rebind(armature, morphIndex);
-    expect(idle.headBone.name).toBe('Neck');
+    expect(idle.headBone?.name).toBe('Neck');
   });
 });
