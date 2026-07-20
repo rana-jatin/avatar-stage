@@ -7,7 +7,11 @@ import type { AnimationAction, AnimationMixer, Bone, KeyframeTrack, Object3D } f
 import type { Armature, Role } from './armature';
 
 const PI = Math.PI;
-const D2R = PI / 250;
+// NOT degrees-to-radians (that would be PI / 180). This is a hand-tuned
+// attenuation factor (~0.0126 rad per unit) that every keyframe table below
+// was calibrated against. Do not change the value — it would re-scale all
+// procedural animation amplitudes at once.
+const ATTEN = PI / 250;
 
 function isBone(o: Object3D | null | undefined): o is Bone {
   return Boolean(o && (o as Bone).isBone);
@@ -109,7 +113,7 @@ function pushPos(
 }
 
 function degKeys(values: number[]): number[] {
-  return values.map((v) => v * D2R);
+  return values.map((v) => v * ATTEN);
 }
 
 interface PalmSpec {
@@ -289,16 +293,16 @@ function buildWave(arm: Armature): THREE.AnimationClip | null {
   if (!sh) return null;
   // Raise arm overhead, then wave the forearm side-to-side.
   const t = [0, 0.55, 1.1, 1.65, 2.2, 2.75, 3.3, 3.5];
-  const upY = 30 * D2R;
-  const upZ = 90 * D2R;
+  const upY = 30 * ATTEN;
+  const upZ = 90 * ATTEN;
   const shoulder = [
     [0, 0, 0],
-    [-22 * D2R, upY, upZ],
-    [-30 * D2R, upY, upZ],
-    [-36 * D2R, upY, upZ],
-    [-32 * D2R, upY, upZ],
-    [-24 * D2R, upY, upZ],
-    [-16 * D2R, upY * 0.4, upZ * 0.4],
+    [-22 * ATTEN, upY, upZ],
+    [-30 * ATTEN, upY, upZ],
+    [-36 * ATTEN, upY, upZ],
+    [-32 * ATTEN, upY, upZ],
+    [-24 * ATTEN, upY, upZ],
+    [-16 * ATTEN, upY * 0.4, upZ * 0.4],
     [0, 0, 0],
   ];
   const tracks: KeyframeTrack[] = [];
@@ -307,12 +311,12 @@ function buildWave(arm: Armature): THREE.AnimationClip | null {
   if (fa) {
     pushQuat(tracks, used, fa, t, [
       [0, 0, 0],
-      [8 * D2R, 10 * D2R, -8 * D2R],
-      [18 * D2R, 16 * D2R, -14 * D2R],
-      [4 * D2R, 22 * D2R, -4 * D2R],
-      [16 * D2R, 10 * D2R, -12 * D2R],
-      [6 * D2R, 18 * D2R, -6 * D2R],
-      [10 * D2R, 8 * D2R, -4 * D2R],
+      [8 * ATTEN, 10 * ATTEN, -8 * ATTEN],
+      [18 * ATTEN, 16 * ATTEN, -14 * ATTEN],
+      [4 * ATTEN, 22 * ATTEN, -4 * ATTEN],
+      [16 * ATTEN, 10 * ATTEN, -12 * ATTEN],
+      [6 * ATTEN, 18 * ATTEN, -6 * ATTEN],
+      [10 * ATTEN, 8 * ATTEN, -4 * ATTEN],
       [0, 0, 0],
     ]);
   }
@@ -320,12 +324,12 @@ function buildWave(arm: Armature): THREE.AnimationClip | null {
     // add a small alternating Z twist so the palm rocks to-and-fro
     pushLocalQuat(tracks, used, hand, t, [
       [0, 0, 0],
-      [-60 * D2R, 8 * D2R, 6 * D2R],
-      [-65 * D2R, 4 * D2R, -10 * D2R],
-      [-58 * D2R, 10 * D2R, 4 * D2R],
-      [-66 * D2R, 6 * D2R, -12 * D2R],
-      [-56 * D2R, 10 * D2R, 4 * D2R],
-      [-48 * D2R, 6 * D2R, -2 * D2R],
+      [-60 * ATTEN, 8 * ATTEN, 6 * ATTEN],
+      [-65 * ATTEN, 4 * ATTEN, -10 * ATTEN],
+      [-58 * ATTEN, 10 * ATTEN, 4 * ATTEN],
+      [-66 * ATTEN, 6 * ATTEN, -12 * ATTEN],
+      [-56 * ATTEN, 10 * ATTEN, 4 * ATTEN],
+      [-48 * ATTEN, 6 * ATTEN, -2 * ATTEN],
       [0, 0, 0],
     ]);
   }
@@ -344,12 +348,12 @@ function buildWave(arm: Armature): THREE.AnimationClip | null {
   if (head) {
     pushQuat(tracks, used, head, t, [
       [0, 0, 0],
-      [-5 * D2R, 12 * D2R, 0],
-      [-5 * D2R, 14 * D2R, 0],
-      [-3 * D2R, 12 * D2R, 0],
-      [-4 * D2R, 13 * D2R, 0],
-      [-3 * D2R, 10 * D2R, 0],
-      [-1 * D2R, 5 * D2R, 0],
+      [-5 * ATTEN, 12 * ATTEN, 0],
+      [-5 * ATTEN, 14 * ATTEN, 0],
+      [-3 * ATTEN, 12 * ATTEN, 0],
+      [-4 * ATTEN, 13 * ATTEN, 0],
+      [-3 * ATTEN, 10 * ATTEN, 0],
+      [-1 * ATTEN, 5 * ATTEN, 0],
       [0, 0, 0],
     ]);
   }
@@ -359,12 +363,12 @@ function buildWave(arm: Armature): THREE.AnimationClip | null {
   if (clav) {
     pushQuat(tracks, used, clav, t, [
       [0, 0, 0],
-      [8 * D2R, 0, -6 * D2R],
-      [12 * D2R, 0, -8 * D2R],
-      [15 * D2R, 0, -10 * D2R],
-      [12 * D2R, 0, -8 * D2R],
-      [9 * D2R, 0, -6 * D2R],
-      [4 * D2R, 0, -2 * D2R],
+      [8 * ATTEN, 0, -6 * ATTEN],
+      [12 * ATTEN, 0, -8 * ATTEN],
+      [15 * ATTEN, 0, -10 * ATTEN],
+      [12 * ATTEN, 0, -8 * ATTEN],
+      [9 * ATTEN, 0, -6 * ATTEN],
+      [4 * ATTEN, 0, -2 * ATTEN],
       [0, 0, 0],
     ]);
   }
@@ -374,12 +378,12 @@ function buildWave(arm: Armature): THREE.AnimationClip | null {
   if (spine) {
     pushQuat(tracks, used, spine, t, [
       [0, 0, 0],
-      [0, 0, -3 * D2R],
-      [0, 0, -4 * D2R],
-      [0, 0, -5 * D2R],
-      [0, 0, -4 * D2R],
-      [0, 0, -3 * D2R],
-      [0, 0, -1 * D2R],
+      [0, 0, -3 * ATTEN],
+      [0, 0, -4 * ATTEN],
+      [0, 0, -5 * ATTEN],
+      [0, 0, -4 * ATTEN],
+      [0, 0, -3 * ATTEN],
+      [0, 0, -1 * ATTEN],
       [0, 0, 0],
     ]);
   }
@@ -389,12 +393,12 @@ function buildWave(arm: Armature): THREE.AnimationClip | null {
   if (leftArm) {
     pushQuat(tracks, used, leftArm, t, [
       [0, 0, 0],
-      [0, 0, 6 * D2R],
-      [0, 0, 8 * D2R],
-      [0, 0, 8 * D2R],
-      [0, 0, 8 * D2R],
-      [0, 0, 6 * D2R],
-      [0, 0, 3 * D2R],
+      [0, 0, 6 * ATTEN],
+      [0, 0, 8 * ATTEN],
+      [0, 0, 8 * ATTEN],
+      [0, 0, 8 * ATTEN],
+      [0, 0, 6 * ATTEN],
+      [0, 0, 3 * ATTEN],
       [0, 0, 0],
     ]);
   }
@@ -405,7 +409,7 @@ function buildWave(arm: Armature): THREE.AnimationClip | null {
 function buildNod(arm: Armature): THREE.AnimationClip | null {
   const h = arm.resolved.head;
   if (!h) return null;
-  const a = 10 * D2R;
+  const a = 10 * ATTEN;
   const t = [0, 0.3, 0.6, 0.9, 1.2, 1.5];
   const eul = [
     [0, 0, 0],
@@ -421,7 +425,7 @@ function buildNod(arm: Armature): THREE.AnimationClip | null {
 function buildShake(arm: Armature): THREE.AnimationClip | null {
   const h = arm.resolved.head;
   if (!h) return null;
-  const a = 15 * D2R;
+  const a = 15 * ATTEN;
   const t = [0, 0.3, 0.6, 0.9, 1.2, 1.5, 1.8];
   const eul = [
     [0, 0, 0],
@@ -438,8 +442,8 @@ function buildShake(arm: Armature): THREE.AnimationClip | null {
 function buildLookAround(arm: Armature): THREE.AnimationClip | null {
   const h = arm.resolved.head;
   if (!h) return null;
-  const a = 22 * D2R;
-  const p = 6 * D2R;
+  const a = 22 * ATTEN;
+  const p = 6 * ATTEN;
   const t = [0, 0.8, 1.6, 2.4, 3.2, 4.0];
   const eul = [
     [0, 0, 0],
@@ -457,7 +461,7 @@ function buildShrug(arm: Armature): THREE.AnimationClip | null {
   const R = arm.resolved.rightShoulder || arm.resolved.rightUpperArm;
   if (!L && !R) return null;
   const t = [0, 0.4, 0.9, 1.3, 1.6];
-  const up = 14 * D2R;
+  const up = 14 * ATTEN;
   const tracks: KeyframeTrack[] = [];
   if (L)
     tracks.push(
@@ -512,7 +516,7 @@ function buildDance(arm: Armature): THREE.AnimationClip | null {
   const tracks: KeyframeTrack[] = [];
   const used = new Set<string>();
   if (hip) {
-    const sway = 12 * D2R;
+    const sway = 12 * ATTEN;
     tracks.push(
       quatTrack(hip, t, [
         [0, 0, 0],
@@ -528,7 +532,7 @@ function buildDance(arm: Armature): THREE.AnimationClip | null {
     );
   }
   if (spine) {
-    const a = 8 * D2R;
+    const a = 8 * ATTEN;
     tracks.push(
       quatTrack(spine, t, [
         [0, 0, 0],
@@ -544,7 +548,7 @@ function buildDance(arm: Armature): THREE.AnimationClip | null {
     );
   }
   if (lUA) {
-    const z = -70 * D2R;
+    const z = -70 * ATTEN;
     tracks.push(
       quatTrack(lUA, t, [
         [0, 0, 0],
@@ -560,7 +564,7 @@ function buildDance(arm: Armature): THREE.AnimationClip | null {
     );
   }
   if (rUA) {
-    const z = 70 * D2R;
+    const z = 70 * ATTEN;
     tracks.push(
       quatTrack(rUA, t, [
         [0, 0, 0],
@@ -577,24 +581,24 @@ function buildDance(arm: Armature): THREE.AnimationClip | null {
   }
   pushQuat(tracks, used, lHand, t, [
     [0, 0, 0],
-    [0, 0, -8 * D2R],
-    [0, 0, -14 * D2R],
-    [0, 0, -8 * D2R],
-    [0, 0, -14 * D2R],
-    [0, 0, -8 * D2R],
-    [0, 0, -14 * D2R],
-    [0, 0, -8 * D2R],
+    [0, 0, -8 * ATTEN],
+    [0, 0, -14 * ATTEN],
+    [0, 0, -8 * ATTEN],
+    [0, 0, -14 * ATTEN],
+    [0, 0, -8 * ATTEN],
+    [0, 0, -14 * ATTEN],
+    [0, 0, -8 * ATTEN],
     [0, 0, 0],
   ]);
   pushQuat(tracks, used, rHand, t, [
     [0, 0, 0],
-    [0, 0, 14 * D2R],
-    [0, 0, 8 * D2R],
-    [0, 0, 14 * D2R],
-    [0, 0, 8 * D2R],
-    [0, 0, 14 * D2R],
-    [0, 0, 8 * D2R],
-    [0, 0, 14 * D2R],
+    [0, 0, 14 * ATTEN],
+    [0, 0, 8 * ATTEN],
+    [0, 0, 14 * ATTEN],
+    [0, 0, 8 * ATTEN],
+    [0, 0, 14 * ATTEN],
+    [0, 0, 8 * ATTEN],
+    [0, 0, 14 * ATTEN],
     [0, 0, 0],
   ]);
   pushPalmShape(
@@ -619,7 +623,7 @@ function buildDance(arm: Armature): THREE.AnimationClip | null {
   // Forearm elbow bend — closes when upper arm is raised, opens as it drops.
   const lLA = arm.resolved.leftLowerArm;
   const rLA = arm.resolved.rightLowerArm;
-  const eb = 35 * D2R;
+  const eb = 35 * ATTEN;
   pushQuat(tracks, used, lLA, t, [
     [0, 0, 0],
     [eb * 0.5, 0, 0],
@@ -662,7 +666,7 @@ function buildDance(arm: Armature): THREE.AnimationClip | null {
   // Upper chest follows spine one keyframe behind — wave propagation through torso.
   const upperChest = arm.resolved.upperChest;
   if (upperChest) {
-    const c = 5 * D2R;
+    const c = 5 * ATTEN;
     pushQuat(tracks, used, upperChest, t, [
       [0, 0, 0],
       [0, 0, 0],
@@ -679,7 +683,7 @@ function buildDance(arm: Armature): THREE.AnimationClip | null {
   // Head nods forward on each downbeat in sync with the rhythm.
   const dHead = arm.resolved.head;
   if (dHead) {
-    const nod = 6 * D2R;
+    const nod = 6 * ATTEN;
     pushQuat(tracks, used, dHead, t, [
       [0, 0, 0],
       [nod, 0, 0],
@@ -696,7 +700,7 @@ function buildDance(arm: Armature): THREE.AnimationClip | null {
   // Clavicles lift when their arm is at peak swing, drop when arm is low.
   const lSh = arm.resolved.leftShoulder;
   const rSh = arm.resolved.rightShoulder;
-  const cv = 10 * D2R;
+  const cv = 10 * ATTEN;
   pushQuat(tracks, used, lSh, t, [
     [0, 0, 0],
     [cv * 0.4, 0, 0],
@@ -723,7 +727,7 @@ function buildDance(arm: Armature): THREE.AnimationClip | null {
   // Alternating leg weight-shift — left and right legs respond to hip sway direction.
   const lUL = arm.resolved.leftUpperLeg;
   const rUL = arm.resolved.rightUpperLeg;
-  const ls = 8 * D2R;
+  const ls = 8 * ATTEN;
   pushQuat(tracks, used, lUL, t, [
     [0, 0, 0],
     [-ls * 0.5, 0, 0],
@@ -764,8 +768,8 @@ function buildIdleVariation(arm: Armature): THREE.AnimationClip | null {
   const tracks: KeyframeTrack[] = [];
   const used = new Set<string>();
   if (h) {
-    const y = 5 * D2R;
-    const x = 3 * D2R;
+    const y = 5 * ATTEN;
+    const x = 3 * ATTEN;
     pushQuat(tracks, used, h, t, [
       [0, 0, 0],
       [x, y, 0],
@@ -776,7 +780,7 @@ function buildIdleVariation(arm: Armature): THREE.AnimationClip | null {
     ]);
   }
   if (s) {
-    const a = 2 * D2R;
+    const a = 2 * ATTEN;
     pushQuat(tracks, used, s, t, [
       [0, 0, 0],
       [0, a, 0],
@@ -786,56 +790,56 @@ function buildIdleVariation(arm: Armature): THREE.AnimationClip | null {
       [0, 0, 0],
     ]);
   }
-  const aPose = 30 * D2R;
+  const aPose = 30 * ATTEN;
   const leftZ = aPose;
   const rightZ = -leftZ;
   pushQuat(tracks, used, lUA, t, [
     [0, 0, leftZ],
     [0, 0, leftZ],
-    [0, 0, leftZ - 2 * D2R],
+    [0, 0, leftZ - 2 * ATTEN],
     [0, 0, leftZ],
-    [0, 0, leftZ + 2 * D2R],
+    [0, 0, leftZ + 2 * ATTEN],
     [0, 0, leftZ],
   ]);
   pushQuat(tracks, used, rUA, t, [
     [0, 0, rightZ],
     [0, 0, rightZ],
-    [0, 0, rightZ + 2 * D2R],
+    [0, 0, rightZ + 2 * ATTEN],
     [0, 0, rightZ],
-    [0, 0, rightZ - 2 * D2R],
+    [0, 0, rightZ - 2 * ATTEN],
     [0, 0, rightZ],
   ]);
   pushQuat(tracks, used, lLA, t, [
-    [0, 8 * D2R, 0],
-    [0, 8 * D2R, 0],
-    [0, 10 * D2R, 0],
-    [0, 8 * D2R, 0],
-    [0, 6 * D2R, 0],
-    [0, 8 * D2R, 0],
+    [0, 8 * ATTEN, 0],
+    [0, 8 * ATTEN, 0],
+    [0, 10 * ATTEN, 0],
+    [0, 8 * ATTEN, 0],
+    [0, 6 * ATTEN, 0],
+    [0, 8 * ATTEN, 0],
   ]);
   pushQuat(tracks, used, rLA, t, [
-    [0, -8 * D2R, 0],
-    [0, -8 * D2R, 0],
-    [0, -10 * D2R, 0],
-    [0, -8 * D2R, 0],
-    [0, -6 * D2R, 0],
-    [0, -8 * D2R, 0],
+    [0, -8 * ATTEN, 0],
+    [0, -8 * ATTEN, 0],
+    [0, -10 * ATTEN, 0],
+    [0, -8 * ATTEN, 0],
+    [0, -6 * ATTEN, 0],
+    [0, -8 * ATTEN, 0],
   ]);
   pushQuat(tracks, used, lHand, t, [
-    [0, 0, -4 * D2R],
-    [0, 0, -4 * D2R],
-    [0, 0, -3 * D2R],
-    [0, 0, -4 * D2R],
-    [0, 0, -5 * D2R],
-    [0, 0, -4 * D2R],
+    [0, 0, -4 * ATTEN],
+    [0, 0, -4 * ATTEN],
+    [0, 0, -3 * ATTEN],
+    [0, 0, -4 * ATTEN],
+    [0, 0, -5 * ATTEN],
+    [0, 0, -4 * ATTEN],
   ]);
   pushQuat(tracks, used, rHand, t, [
-    [0, 0, 4 * D2R],
-    [0, 0, 4 * D2R],
-    [0, 0, 3 * D2R],
-    [0, 0, 4 * D2R],
-    [0, 0, 5 * D2R],
-    [0, 0, 4 * D2R],
+    [0, 0, 4 * ATTEN],
+    [0, 0, 4 * ATTEN],
+    [0, 0, 3 * ATTEN],
+    [0, 0, 4 * ATTEN],
+    [0, 0, 5 * ATTEN],
+    [0, 0, 4 * ATTEN],
   ]);
   pushPalmShape(
     tracks,
@@ -892,99 +896,99 @@ function buildHeroEntrance(arm: Armature): THREE.AnimationClip | null {
   pushQuat(tracks, used, hip, t, [
     [0, 0, 0],
     [0, 0, 0],
-    [0, 8 * D2R, 0],
-    [0, -6 * D2R, 0],
+    [0, 8 * ATTEN, 0],
+    [0, -6 * ATTEN, 0],
     [0, 0, 0],
-    [0, 0, 5 * D2R],
-    [0, 0, -4 * D2R],
+    [0, 0, 5 * ATTEN],
+    [0, 0, -4 * ATTEN],
     [0, 0, 0],
     [0, 0, 0],
   ]);
   pushQuat(tracks, used, spine, t, [
     [0, 0, 0],
-    [12 * D2R, 0, 0],
-    [-9 * D2R, 0, 0],
-    [2 * D2R, 0, 0],
+    [12 * ATTEN, 0, 0],
+    [-9 * ATTEN, 0, 0],
+    [2 * ATTEN, 0, 0],
     [0, 0, 0],
-    [0, 8 * D2R, 0],
-    [0, -6 * D2R, 0],
+    [0, 8 * ATTEN, 0],
+    [0, -6 * ATTEN, 0],
     [0, 0, 0],
     [0, 0, 0],
   ]);
   pushQuat(tracks, used, head, t, [
     [0, 0, 0],
-    [10 * D2R, 0, 0],
-    [-8 * D2R, 0, 0],
+    [10 * ATTEN, 0, 0],
+    [-8 * ATTEN, 0, 0],
     [0, 0, 0],
     [0, 0, 0],
-    [-4 * D2R, 12 * D2R, 0],
-    [3 * D2R, -10 * D2R, 0],
+    [-4 * ATTEN, 12 * ATTEN, 0],
+    [3 * ATTEN, -10 * ATTEN, 0],
     [0, 0, 0],
     [0, 0, 0],
   ]);
   pushQuat(tracks, used, lUA, t, [
     [0, 0, 0],
-    [0, 0, -20 * D2R],
-    [0, 0, -120 * D2R],
-    [0, 0, -92 * D2R],
-    [0, 0, -55 * D2R],
-    [0, 0, -35 * D2R],
-    [0, 0, -18 * D2R],
+    [0, 0, -20 * ATTEN],
+    [0, 0, -120 * ATTEN],
+    [0, 0, -92 * ATTEN],
+    [0, 0, -55 * ATTEN],
+    [0, 0, -35 * ATTEN],
+    [0, 0, -18 * ATTEN],
     [0, 0, 0],
     [0, 0, 0],
   ]);
   pushQuat(tracks, used, rUA, t, [
     [0, 0, 0],
-    [0, 0, 20 * D2R],
-    [0, 0, 120 * D2R],
-    [0, 0, 92 * D2R],
-    [0, 0, 55 * D2R],
-    [0, 0, 35 * D2R],
-    [0, 0, 18 * D2R],
+    [0, 0, 20 * ATTEN],
+    [0, 0, 120 * ATTEN],
+    [0, 0, 92 * ATTEN],
+    [0, 0, 55 * ATTEN],
+    [0, 0, 35 * ATTEN],
+    [0, 0, 18 * ATTEN],
     [0, 0, 0],
     [0, 0, 0],
   ]);
   pushQuat(tracks, used, lLA, t, [
     [0, 0, 0],
     [0, 0, 0],
-    [0, 24 * D2R, 0],
-    [0, -18 * D2R, 0],
+    [0, 24 * ATTEN, 0],
+    [0, -18 * ATTEN, 0],
     [0, 0, 0],
-    [0, 10 * D2R, 0],
-    [0, -8 * D2R, 0],
+    [0, 10 * ATTEN, 0],
+    [0, -8 * ATTEN, 0],
     [0, 0, 0],
     [0, 0, 0],
   ]);
   pushQuat(tracks, used, rLA, t, [
     [0, 0, 0],
     [0, 0, 0],
-    [0, -24 * D2R, 0],
-    [0, 18 * D2R, 0],
+    [0, -24 * ATTEN, 0],
+    [0, 18 * ATTEN, 0],
     [0, 0, 0],
-    [0, -10 * D2R, 0],
-    [0, 8 * D2R, 0],
+    [0, -10 * ATTEN, 0],
+    [0, 8 * ATTEN, 0],
     [0, 0, 0],
     [0, 0, 0],
   ]);
   pushQuat(tracks, used, lHand, t, [
     [0, 0, 0],
-    [0, 0, -4 * D2R],
-    [0, 0, -12 * D2R],
-    [0, 0, -8 * D2R],
-    [0, 0, -5 * D2R],
-    [0, 0, -4 * D2R],
-    [0, 0, -2 * D2R],
+    [0, 0, -4 * ATTEN],
+    [0, 0, -12 * ATTEN],
+    [0, 0, -8 * ATTEN],
+    [0, 0, -5 * ATTEN],
+    [0, 0, -4 * ATTEN],
+    [0, 0, -2 * ATTEN],
     [0, 0, 0],
     [0, 0, 0],
   ]);
   pushQuat(tracks, used, rHand, t, [
     [0, 0, 0],
-    [0, 0, 4 * D2R],
-    [0, 0, 12 * D2R],
-    [0, 0, 8 * D2R],
-    [0, 0, 5 * D2R],
-    [0, 0, 4 * D2R],
-    [0, 0, 2 * D2R],
+    [0, 0, 4 * ATTEN],
+    [0, 0, 12 * ATTEN],
+    [0, 0, 8 * ATTEN],
+    [0, 0, 5 * ATTEN],
+    [0, 0, 4 * ATTEN],
+    [0, 0, 2 * ATTEN],
     [0, 0, 0],
     [0, 0, 0],
   ]);
@@ -1008,9 +1012,9 @@ function buildHeroEntrance(arm: Armature): THREE.AnimationClip | null {
   );
   pushQuat(tracks, used, lUL, t, [
     [0, 0, 0],
-    [18 * D2R, 0, 0],
-    [-8 * D2R, 0, 0],
-    [2 * D2R, 0, 0],
+    [18 * ATTEN, 0, 0],
+    [-8 * ATTEN, 0, 0],
+    [2 * ATTEN, 0, 0],
     [0, 0, 0],
     [0, 0, 0],
     [0, 0, 0],
@@ -1019,9 +1023,9 @@ function buildHeroEntrance(arm: Armature): THREE.AnimationClip | null {
   ]);
   pushQuat(tracks, used, rUL, t, [
     [0, 0, 0],
-    [18 * D2R, 0, 0],
-    [-8 * D2R, 0, 0],
-    [2 * D2R, 0, 0],
+    [18 * ATTEN, 0, 0],
+    [-8 * ATTEN, 0, 0],
+    [2 * ATTEN, 0, 0],
     [0, 0, 0],
     [0, 0, 0],
     [0, 0, 0],
@@ -1030,9 +1034,9 @@ function buildHeroEntrance(arm: Armature): THREE.AnimationClip | null {
   ]);
   pushQuat(tracks, used, lLL, t, [
     [0, 0, 0],
-    [-20 * D2R, 0, 0],
-    [10 * D2R, 0, 0],
-    [-4 * D2R, 0, 0],
+    [-20 * ATTEN, 0, 0],
+    [10 * ATTEN, 0, 0],
+    [-4 * ATTEN, 0, 0],
     [0, 0, 0],
     [0, 0, 0],
     [0, 0, 0],
@@ -1041,9 +1045,9 @@ function buildHeroEntrance(arm: Armature): THREE.AnimationClip | null {
   ]);
   pushQuat(tracks, used, rLL, t, [
     [0, 0, 0],
-    [-20 * D2R, 0, 0],
-    [10 * D2R, 0, 0],
-    [-4 * D2R, 0, 0],
+    [-20 * ATTEN, 0, 0],
+    [10 * ATTEN, 0, 0],
+    [-4 * ATTEN, 0, 0],
     [0, 0, 0],
     [0, 0, 0],
     [0, 0, 0],
@@ -1071,90 +1075,90 @@ function buildClap(arm: Armature): THREE.AnimationClip | null {
 
   pushQuat(tracks, used, spine, t, [
     [0, 0, 0],
-    [-3 * D2R, 0, 0],
-    [-5 * D2R, 0, 0],
+    [-3 * ATTEN, 0, 0],
+    [-5 * ATTEN, 0, 0],
     [0, 0, 0],
-    [-5 * D2R, 0, 0],
+    [-5 * ATTEN, 0, 0],
     [0, 0, 0],
-    [-3 * D2R, 0, 0],
+    [-3 * ATTEN, 0, 0],
     [0, 0, 0],
     [0, 0, 0],
   ]);
   pushQuat(tracks, used, head, t, [
     [0, 0, 0],
-    [-3 * D2R, 0, 0],
-    [-6 * D2R, 0, 0],
-    [4 * D2R, 0, 0],
-    [-6 * D2R, 0, 0],
-    [4 * D2R, 0, 0],
-    [-3 * D2R, 0, 0],
+    [-3 * ATTEN, 0, 0],
+    [-6 * ATTEN, 0, 0],
+    [4 * ATTEN, 0, 0],
+    [-6 * ATTEN, 0, 0],
+    [4 * ATTEN, 0, 0],
+    [-3 * ATTEN, 0, 0],
     [0, 0, 0],
     [0, 0, 0],
   ]);
   pushQuat(tracks, used, lUA, t, [
     [0, 0, 0],
-    [0, 0, -45 * D2R],
-    [0, 18 * D2R, -72 * D2R],
-    [0, -6 * D2R, -48 * D2R],
-    [0, 18 * D2R, -72 * D2R],
-    [0, -6 * D2R, -48 * D2R],
-    [0, 10 * D2R, -62 * D2R],
-    [0, 0, -25 * D2R],
+    [0, 0, -45 * ATTEN],
+    [0, 18 * ATTEN, -72 * ATTEN],
+    [0, -6 * ATTEN, -48 * ATTEN],
+    [0, 18 * ATTEN, -72 * ATTEN],
+    [0, -6 * ATTEN, -48 * ATTEN],
+    [0, 10 * ATTEN, -62 * ATTEN],
+    [0, 0, -25 * ATTEN],
     [0, 0, 0],
   ]);
   pushQuat(tracks, used, rUA, t, [
     [0, 0, 0],
-    [0, 0, 45 * D2R],
-    [0, -18 * D2R, 72 * D2R],
-    [0, 6 * D2R, 48 * D2R],
-    [0, -18 * D2R, 72 * D2R],
-    [0, 6 * D2R, 48 * D2R],
-    [0, -10 * D2R, 62 * D2R],
-    [0, 0, 25 * D2R],
+    [0, 0, 45 * ATTEN],
+    [0, -18 * ATTEN, 72 * ATTEN],
+    [0, 6 * ATTEN, 48 * ATTEN],
+    [0, -18 * ATTEN, 72 * ATTEN],
+    [0, 6 * ATTEN, 48 * ATTEN],
+    [0, -10 * ATTEN, 62 * ATTEN],
+    [0, 0, 25 * ATTEN],
     [0, 0, 0],
   ]);
   pushQuat(tracks, used, lLA, t, [
     [0, 0, 0],
     [0, 0, 0],
-    [0, 32 * D2R, 0],
-    [0, 5 * D2R, 0],
-    [0, 32 * D2R, 0],
-    [0, 5 * D2R, 0],
-    [0, 20 * D2R, 0],
+    [0, 32 * ATTEN, 0],
+    [0, 5 * ATTEN, 0],
+    [0, 32 * ATTEN, 0],
+    [0, 5 * ATTEN, 0],
+    [0, 20 * ATTEN, 0],
     [0, 0, 0],
     [0, 0, 0],
   ]);
   pushQuat(tracks, used, rLA, t, [
     [0, 0, 0],
     [0, 0, 0],
-    [0, -32 * D2R, 0],
-    [0, -5 * D2R, 0],
-    [0, -32 * D2R, 0],
-    [0, -5 * D2R, 0],
-    [0, -20 * D2R, 0],
+    [0, -32 * ATTEN, 0],
+    [0, -5 * ATTEN, 0],
+    [0, -32 * ATTEN, 0],
+    [0, -5 * ATTEN, 0],
+    [0, -20 * ATTEN, 0],
     [0, 0, 0],
     [0, 0, 0],
   ]);
   pushQuat(tracks, used, lHand, t, [
     [0, 0, 0],
-    [0, 0, -8 * D2R],
-    [0, 0, -16 * D2R],
-    [0, 0, -7 * D2R],
-    [0, 0, -16 * D2R],
-    [0, 0, -7 * D2R],
-    [0, 0, -12 * D2R],
-    [0, 0, -4 * D2R],
+    [0, 0, -8 * ATTEN],
+    [0, 0, -16 * ATTEN],
+    [0, 0, -7 * ATTEN],
+    [0, 0, -16 * ATTEN],
+    [0, 0, -7 * ATTEN],
+    [0, 0, -12 * ATTEN],
+    [0, 0, -4 * ATTEN],
     [0, 0, 0],
   ]);
   pushQuat(tracks, used, rHand, t, [
     [0, 0, 0],
-    [0, 0, 8 * D2R],
-    [0, 0, 16 * D2R],
-    [0, 0, 7 * D2R],
-    [0, 0, 16 * D2R],
-    [0, 0, 7 * D2R],
-    [0, 0, 12 * D2R],
-    [0, 0, 4 * D2R],
+    [0, 0, 8 * ATTEN],
+    [0, 0, 16 * ATTEN],
+    [0, 0, 7 * ATTEN],
+    [0, 0, 16 * ATTEN],
+    [0, 0, 7 * ATTEN],
+    [0, 0, 12 * ATTEN],
+    [0, 0, 4 * ATTEN],
     [0, 0, 0],
   ]);
   pushPalmShape(
@@ -1210,119 +1214,119 @@ function buildPunchCombo(arm: Armature): THREE.AnimationClip | null {
   ]);
   pushQuat(tracks, used, hip, t, [
     [0, 0, 0],
-    [0, -8 * D2R, 0],
+    [0, -8 * ATTEN, 0],
     [0, 0, 0],
-    [0, 9 * D2R, 0],
+    [0, 9 * ATTEN, 0],
     [0, 0, 0],
-    [0, -12 * D2R, 0],
+    [0, -12 * ATTEN, 0],
     [0, 0, 0],
-    [0, 11 * D2R, 0],
-    [0, -8 * D2R, 0],
+    [0, 11 * ATTEN, 0],
+    [0, -8 * ATTEN, 0],
     [0, 0, 0],
     [0, 0, 0],
   ]);
   pushQuat(tracks, used, spine, t, [
     [0, 0, 0],
-    [0, -14 * D2R, 0],
-    [0, -2 * D2R, 0],
-    [0, 14 * D2R, 0],
-    [0, 1 * D2R, 0],
-    [-3 * D2R, -18 * D2R, 0],
+    [0, -14 * ATTEN, 0],
+    [0, -2 * ATTEN, 0],
+    [0, 14 * ATTEN, 0],
+    [0, 1 * ATTEN, 0],
+    [-3 * ATTEN, -18 * ATTEN, 0],
     [0, 0, 0],
-    [-3 * D2R, 17 * D2R, 0],
-    [0, -8 * D2R, 0],
+    [-3 * ATTEN, 17 * ATTEN, 0],
+    [0, -8 * ATTEN, 0],
     [0, 0, 0],
     [0, 0, 0],
   ]);
   pushQuat(tracks, used, head, t, [
     [0, 0, 0],
-    [0, 7 * D2R, 0],
+    [0, 7 * ATTEN, 0],
     [0, 0, 0],
-    [0, -7 * D2R, 0],
+    [0, -7 * ATTEN, 0],
     [0, 0, 0],
-    [-3 * D2R, 10 * D2R, 0],
-    [3 * D2R, 0, 0],
-    [-3 * D2R, -10 * D2R, 0],
-    [0, 6 * D2R, 0],
+    [-3 * ATTEN, 10 * ATTEN, 0],
+    [3 * ATTEN, 0, 0],
+    [-3 * ATTEN, -10 * ATTEN, 0],
+    [0, 6 * ATTEN, 0],
     [0, 0, 0],
     [0, 0, 0],
   ]);
   pushQuat(tracks, used, lUA, t, [
     [0, 0, 0],
-    [0, 0, -36 * D2R],
-    [0, 0, -10 * D2R],
-    [0, 0, -76 * D2R],
-    [0, 0, -18 * D2R],
-    [0, 0, -38 * D2R],
-    [0, 0, -8 * D2R],
-    [0, 0, -90 * D2R],
-    [0, 0, -25 * D2R],
-    [0, 0, -8 * D2R],
+    [0, 0, -36 * ATTEN],
+    [0, 0, -10 * ATTEN],
+    [0, 0, -76 * ATTEN],
+    [0, 0, -18 * ATTEN],
+    [0, 0, -38 * ATTEN],
+    [0, 0, -8 * ATTEN],
+    [0, 0, -90 * ATTEN],
+    [0, 0, -25 * ATTEN],
+    [0, 0, -8 * ATTEN],
     [0, 0, 0],
   ]);
   pushQuat(tracks, used, rUA, t, [
     [0, 0, 0],
-    [0, 0, 78 * D2R],
-    [0, 0, 16 * D2R],
-    [0, 0, 34 * D2R],
-    [0, 0, 8 * D2R],
-    [0, 0, 95 * D2R],
-    [0, 0, 20 * D2R],
-    [0, 0, 42 * D2R],
-    [0, 0, 82 * D2R],
-    [0, 0, 12 * D2R],
+    [0, 0, 78 * ATTEN],
+    [0, 0, 16 * ATTEN],
+    [0, 0, 34 * ATTEN],
+    [0, 0, 8 * ATTEN],
+    [0, 0, 95 * ATTEN],
+    [0, 0, 20 * ATTEN],
+    [0, 0, 42 * ATTEN],
+    [0, 0, 82 * ATTEN],
+    [0, 0, 12 * ATTEN],
     [0, 0, 0],
   ]);
   pushQuat(tracks, used, lLA, t, [
     [0, 0, 0],
-    [0, 18 * D2R, 0],
+    [0, 18 * ATTEN, 0],
     [0, 0, 0],
-    [0, 36 * D2R, 0],
+    [0, 36 * ATTEN, 0],
     [0, 0, 0],
-    [0, 14 * D2R, 0],
+    [0, 14 * ATTEN, 0],
     [0, 0, 0],
-    [0, 42 * D2R, 0],
-    [0, 12 * D2R, 0],
+    [0, 42 * ATTEN, 0],
+    [0, 12 * ATTEN, 0],
     [0, 0, 0],
     [0, 0, 0],
   ]);
   pushQuat(tracks, used, rLA, t, [
     [0, 0, 0],
-    [0, -40 * D2R, 0],
-    [0, -5 * D2R, 0],
-    [0, -16 * D2R, 0],
+    [0, -40 * ATTEN, 0],
+    [0, -5 * ATTEN, 0],
+    [0, -16 * ATTEN, 0],
     [0, 0, 0],
-    [0, -48 * D2R, 0],
-    [0, -6 * D2R, 0],
-    [0, -16 * D2R, 0],
-    [0, -34 * D2R, 0],
+    [0, -48 * ATTEN, 0],
+    [0, -6 * ATTEN, 0],
+    [0, -16 * ATTEN, 0],
+    [0, -34 * ATTEN, 0],
     [0, 0, 0],
     [0, 0, 0],
   ]);
   pushQuat(tracks, used, lHand, t, [
     [0, 0, 0],
-    [0, 0, -10 * D2R],
-    [0, 0, -5 * D2R],
-    [0, 0, -14 * D2R],
-    [0, 0, -6 * D2R],
-    [0, 0, -8 * D2R],
-    [0, 0, -4 * D2R],
-    [0, 0, -16 * D2R],
-    [0, 0, -8 * D2R],
-    [0, 0, -3 * D2R],
+    [0, 0, -10 * ATTEN],
+    [0, 0, -5 * ATTEN],
+    [0, 0, -14 * ATTEN],
+    [0, 0, -6 * ATTEN],
+    [0, 0, -8 * ATTEN],
+    [0, 0, -4 * ATTEN],
+    [0, 0, -16 * ATTEN],
+    [0, 0, -8 * ATTEN],
+    [0, 0, -3 * ATTEN],
     [0, 0, 0],
   ]);
   pushQuat(tracks, used, rHand, t, [
     [0, 0, 0],
-    [0, 0, 16 * D2R],
-    [0, 0, 7 * D2R],
-    [0, 0, 8 * D2R],
-    [0, 0, 3 * D2R],
-    [0, 0, 18 * D2R],
-    [0, 0, 8 * D2R],
-    [0, 0, 9 * D2R],
-    [0, 0, 15 * D2R],
-    [0, 0, 4 * D2R],
+    [0, 0, 16 * ATTEN],
+    [0, 0, 7 * ATTEN],
+    [0, 0, 8 * ATTEN],
+    [0, 0, 3 * ATTEN],
+    [0, 0, 18 * ATTEN],
+    [0, 0, 8 * ATTEN],
+    [0, 0, 9 * ATTEN],
+    [0, 0, 15 * ATTEN],
+    [0, 0, 4 * ATTEN],
     [0, 0, 0],
   ]);
   pushPalmShape(tracks, used, arm, 'left', t, degKeys([0, 20, 12, 25, 14, 18, 12, 28, 18, 8, 0]));
@@ -1363,77 +1367,77 @@ function buildJumpTwist(arm: Armature): THREE.AnimationClip | null {
   pushQuat(tracks, used, hip, t, [
     [0, 0, 0],
     [0, 0, 0],
-    [0, 55 * D2R, 0],
-    [0, 135 * D2R, 0],
-    [0, 80 * D2R, 0],
-    [0, 10 * D2R, 0],
-    [0, -8 * D2R, 0],
-    [0, 4 * D2R, 0],
+    [0, 55 * ATTEN, 0],
+    [0, 135 * ATTEN, 0],
+    [0, 80 * ATTEN, 0],
+    [0, 10 * ATTEN, 0],
+    [0, -8 * ATTEN, 0],
+    [0, 4 * ATTEN, 0],
     [0, 0, 0],
   ]);
   pushQuat(tracks, used, spine, t, [
     [0, 0, 0],
-    [12 * D2R, 0, 0],
-    [-8 * D2R, 0, 0],
-    [-6 * D2R, 0, 0],
-    [2 * D2R, 0, 0],
-    [6 * D2R, 0, 0],
+    [12 * ATTEN, 0, 0],
+    [-8 * ATTEN, 0, 0],
+    [-6 * ATTEN, 0, 0],
+    [2 * ATTEN, 0, 0],
+    [6 * ATTEN, 0, 0],
     [0, 0, 0],
     [0, 0, 0],
     [0, 0, 0],
   ]);
   pushQuat(tracks, used, head, t, [
     [0, 0, 0],
-    [8 * D2R, 0, 0],
-    [-5 * D2R, -10 * D2R, 0],
-    [-4 * D2R, 8 * D2R, 0],
-    [2 * D2R, 0, 0],
-    [5 * D2R, 0, 0],
+    [8 * ATTEN, 0, 0],
+    [-5 * ATTEN, -10 * ATTEN, 0],
+    [-4 * ATTEN, 8 * ATTEN, 0],
+    [2 * ATTEN, 0, 0],
+    [5 * ATTEN, 0, 0],
     [0, 0, 0],
     [0, 0, 0],
     [0, 0, 0],
   ]);
   pushQuat(tracks, used, lUA, t, [
     [0, 0, 0],
-    [0, 0, -20 * D2R],
-    [0, 0, -85 * D2R],
-    [0, 0, -122 * D2R],
-    [0, 0, -88 * D2R],
-    [0, 0, -35 * D2R],
-    [0, 0, -12 * D2R],
+    [0, 0, -20 * ATTEN],
+    [0, 0, -85 * ATTEN],
+    [0, 0, -122 * ATTEN],
+    [0, 0, -88 * ATTEN],
+    [0, 0, -35 * ATTEN],
+    [0, 0, -12 * ATTEN],
     [0, 0, 0],
     [0, 0, 0],
   ]);
   pushQuat(tracks, used, rUA, t, [
     [0, 0, 0],
-    [0, 0, 20 * D2R],
-    [0, 0, 85 * D2R],
-    [0, 0, 122 * D2R],
-    [0, 0, 88 * D2R],
-    [0, 0, 35 * D2R],
-    [0, 0, 12 * D2R],
+    [0, 0, 20 * ATTEN],
+    [0, 0, 85 * ATTEN],
+    [0, 0, 122 * ATTEN],
+    [0, 0, 88 * ATTEN],
+    [0, 0, 35 * ATTEN],
+    [0, 0, 12 * ATTEN],
     [0, 0, 0],
     [0, 0, 0],
   ]);
   pushQuat(tracks, used, lHand, t, [
     [0, 0, 0],
-    [0, 0, -6 * D2R],
-    [0, 0, -14 * D2R],
-    [0, 0, -20 * D2R],
-    [0, 0, -14 * D2R],
-    [0, 0, -7 * D2R],
-    [0, 0, -3 * D2R],
+    [0, 0, -6 * ATTEN],
+    [0, 0, -14 * ATTEN],
+    [0, 0, -20 * ATTEN],
+    [0, 0, -14 * ATTEN],
+    [0, 0, -7 * ATTEN],
+    [0, 0, -3 * ATTEN],
     [0, 0, 0],
     [0, 0, 0],
   ]);
   pushQuat(tracks, used, rHand, t, [
     [0, 0, 0],
-    [0, 0, 6 * D2R],
-    [0, 0, 14 * D2R],
-    [0, 0, 20 * D2R],
-    [0, 0, 14 * D2R],
-    [0, 0, 7 * D2R],
-    [0, 0, 3 * D2R],
+    [0, 0, 6 * ATTEN],
+    [0, 0, 14 * ATTEN],
+    [0, 0, 20 * ATTEN],
+    [0, 0, 14 * ATTEN],
+    [0, 0, 7 * ATTEN],
+    [0, 0, 3 * ATTEN],
     [0, 0, 0],
     [0, 0, 0],
   ]);
@@ -1457,45 +1461,45 @@ function buildJumpTwist(arm: Armature): THREE.AnimationClip | null {
   );
   pushQuat(tracks, used, lUL, t, [
     [0, 0, 0],
-    [20 * D2R, 0, 0],
-    [-12 * D2R, 0, 0],
-    [-16 * D2R, 0, 0],
-    [-6 * D2R, 0, 0],
-    [16 * D2R, 0, 0],
-    [4 * D2R, 0, 0],
+    [20 * ATTEN, 0, 0],
+    [-12 * ATTEN, 0, 0],
+    [-16 * ATTEN, 0, 0],
+    [-6 * ATTEN, 0, 0],
+    [16 * ATTEN, 0, 0],
+    [4 * ATTEN, 0, 0],
     [0, 0, 0],
     [0, 0, 0],
   ]);
   pushQuat(tracks, used, rUL, t, [
     [0, 0, 0],
-    [20 * D2R, 0, 0],
-    [-12 * D2R, 0, 0],
-    [-16 * D2R, 0, 0],
-    [-6 * D2R, 0, 0],
-    [16 * D2R, 0, 0],
-    [4 * D2R, 0, 0],
+    [20 * ATTEN, 0, 0],
+    [-12 * ATTEN, 0, 0],
+    [-16 * ATTEN, 0, 0],
+    [-6 * ATTEN, 0, 0],
+    [16 * ATTEN, 0, 0],
+    [4 * ATTEN, 0, 0],
     [0, 0, 0],
     [0, 0, 0],
   ]);
   pushQuat(tracks, used, lLL, t, [
     [0, 0, 0],
-    [-26 * D2R, 0, 0],
-    [16 * D2R, 0, 0],
-    [18 * D2R, 0, 0],
-    [8 * D2R, 0, 0],
-    [-18 * D2R, 0, 0],
-    [-6 * D2R, 0, 0],
+    [-26 * ATTEN, 0, 0],
+    [16 * ATTEN, 0, 0],
+    [18 * ATTEN, 0, 0],
+    [8 * ATTEN, 0, 0],
+    [-18 * ATTEN, 0, 0],
+    [-6 * ATTEN, 0, 0],
     [0, 0, 0],
     [0, 0, 0],
   ]);
   pushQuat(tracks, used, rLL, t, [
     [0, 0, 0],
-    [-26 * D2R, 0, 0],
-    [16 * D2R, 0, 0],
-    [18 * D2R, 0, 0],
-    [8 * D2R, 0, 0],
-    [-18 * D2R, 0, 0],
-    [-6 * D2R, 0, 0],
+    [-26 * ATTEN, 0, 0],
+    [16 * ATTEN, 0, 0],
+    [18 * ATTEN, 0, 0],
+    [8 * ATTEN, 0, 0],
+    [-18 * ATTEN, 0, 0],
+    [-6 * ATTEN, 0, 0],
     [0, 0, 0],
     [0, 0, 0],
   ]);
@@ -1550,13 +1554,13 @@ function buildBhangraDance(arm: Armature): THREE.AnimationClip | null {
   // Two cycles per clip (1.6s each). Cycle A: L leads Up, R leads Down.
   // Cycle B (frames 9-14): arms swap roles — L plays the Down-leading pattern,
   // R plays the Up-leading pattern. On loop this gives A→B→A→B…
-  const lUp = [-88 * D2R, 90 * D2R, 176 * D2R];
-  const lDown = [-55 * D2R, 50 * D2R, 110 * D2R];
-  const rUp = [-88 * D2R, 60 * D2R, 176 * D2R];
-  const rDown = [-55 * D2R, 35 * D2R, 110 * D2R];
+  const lUp = [-88 * ATTEN, 90 * ATTEN, 176 * ATTEN];
+  const lDown = [-55 * ATTEN, 50 * ATTEN, 110 * ATTEN];
+  const rUp = [-88 * ATTEN, 60 * ATTEN, 176 * ATTEN];
+  const rDown = [-55 * ATTEN, 35 * ATTEN, 110 * ATTEN];
   pushQuat(tracks, used, lUA, t, [
     [0, 0, 0],
-    [-50 * D2R, 45 * D2R, 105 * D2R],
+    [-50 * ATTEN, 45 * ATTEN, 105 * ATTEN],
     lDown,
     lUp,
     lDown,
@@ -1570,12 +1574,12 @@ function buildBhangraDance(arm: Armature): THREE.AnimationClip | null {
     lDown,
     lUp,
     lDown,
-    [-50 * D2R, 45 * D2R, 105 * D2R],
+    [-50 * ATTEN, 45 * ATTEN, 105 * ATTEN],
     [0, 0, 0],
   ]);
   pushQuat(tracks, used, rUA, t, [
     [0, 0, 0],
-    [-50 * D2R, 32 * D2R, 105 * D2R],
+    [-50 * ATTEN, 32 * ATTEN, 105 * ATTEN],
     rUp,
     rDown,
     rUp,
@@ -1589,7 +1593,7 @@ function buildBhangraDance(arm: Armature): THREE.AnimationClip | null {
     rUp,
     rDown,
     rUp,
-    [-50 * D2R, 32 * D2R, 105 * D2R],
+    [-50 * ATTEN, 32 * ATTEN, 105 * ATTEN],
     [0, 0, 0],
   ]);
 
@@ -1599,7 +1603,7 @@ function buildBhangraDance(arm: Armature): THREE.AnimationClip | null {
   // Clavicle shrugs — alternating L/R for cross-rhythm.
   // Cycle A (frames 1-8): L shrugs on odd beats, R on even.
   // Cycle B (frames 9-15): swapped — L shrugs on even, R on odd, matching the arm swap.
-  const sh = 12 * D2R;
+  const sh = 12 * ATTEN;
   pushQuat(tracks, used, lSh, t, [
     [0, 0, 0],
     [0, 0, 0],
@@ -1640,7 +1644,7 @@ function buildBhangraDance(arm: Armature): THREE.AnimationClip | null {
   ]);
 
   // Spine counter-twist on each beat.
-  const tw = 6 * D2R;
+  const tw = 6 * ATTEN;
   pushQuat(tracks, used, spine, t, [
     [0, 0, 0],
     [0, tw, 0],
@@ -1662,7 +1666,7 @@ function buildBhangraDance(arm: Armature): THREE.AnimationClip | null {
   ]);
 
   // Head bob — forward nod on the dhol downbeat.
-  const nod = 5 * D2R;
+  const nod = 5 * ATTEN;
   pushQuat(tracks, used, head, t, [
     [0, 0, 0],
     [nod, 0, 0],
@@ -1684,8 +1688,8 @@ function buildBhangraDance(arm: Armature): THREE.AnimationClip | null {
   ]);
 
   // Knee springs — flex on the up-pop, settle on the beat.
-  const upper = 10 * D2R;
-  const lower = -18 * D2R;
+  const upper = 10 * ATTEN;
+  const lower = -18 * ATTEN;
   const legSpring = [
     [0, 0, 0],
     [upper, 0, 0],
@@ -1730,7 +1734,7 @@ function buildBhangraDance(arm: Armature): THREE.AnimationClip | null {
   pushQuat(tracks, used, rLL, t, lowerSpring);
 
   // Alternating foot taps — left on odd beats, right on even.
-  const tap = 12 * D2R;
+  const tap = 12 * ATTEN;
   pushQuat(tracks, used, lFoot, t, [
     [0, 0, 0],
     [tap, 0, 0],
@@ -1771,7 +1775,7 @@ function buildBhangraDance(arm: Armature): THREE.AnimationClip | null {
   ]);
 
   // Iconic point — index extended, other fingers curled into a loose fist.
-  const curl = 55 * D2R;
+  const curl = 55 * ATTEN;
   const pointKeys = [
     0,
     curl * 0.5,
@@ -1830,80 +1834,80 @@ function buildSneakyWalk(arm: Armature): THREE.AnimationClip | null {
   ]);
   pushQuat(tracks, used, hip, t, [
     [0, 0, 0],
-    [0, 0, 6 * D2R],
+    [0, 0, 6 * ATTEN],
     [0, 0, 0],
-    [0, 0, -6 * D2R],
+    [0, 0, -6 * ATTEN],
     [0, 0, 0],
-    [0, 0, 6 * D2R],
+    [0, 0, 6 * ATTEN],
     [0, 0, 0],
-    [0, 0, -6 * D2R],
+    [0, 0, -6 * ATTEN],
     [0, 0, 0],
   ]);
   pushQuat(tracks, used, spine, t, [
-    [4 * D2R, 0, 0],
-    [2 * D2R, 8 * D2R, 0],
-    [4 * D2R, 0, 0],
-    [2 * D2R, -8 * D2R, 0],
-    [4 * D2R, 0, 0],
-    [2 * D2R, 8 * D2R, 0],
-    [4 * D2R, 0, 0],
-    [2 * D2R, -8 * D2R, 0],
-    [4 * D2R, 0, 0],
+    [4 * ATTEN, 0, 0],
+    [2 * ATTEN, 8 * ATTEN, 0],
+    [4 * ATTEN, 0, 0],
+    [2 * ATTEN, -8 * ATTEN, 0],
+    [4 * ATTEN, 0, 0],
+    [2 * ATTEN, 8 * ATTEN, 0],
+    [4 * ATTEN, 0, 0],
+    [2 * ATTEN, -8 * ATTEN, 0],
+    [4 * ATTEN, 0, 0],
   ]);
   pushQuat(tracks, used, head, t, [
-    [-4 * D2R, 0, 0],
-    [-3 * D2R, 14 * D2R, 0],
-    [-4 * D2R, 0, 0],
-    [-3 * D2R, -14 * D2R, 0],
-    [-4 * D2R, 0, 0],
-    [-3 * D2R, 14 * D2R, 0],
-    [-4 * D2R, 0, 0],
-    [-3 * D2R, -14 * D2R, 0],
-    [-4 * D2R, 0, 0],
+    [-4 * ATTEN, 0, 0],
+    [-3 * ATTEN, 14 * ATTEN, 0],
+    [-4 * ATTEN, 0, 0],
+    [-3 * ATTEN, -14 * ATTEN, 0],
+    [-4 * ATTEN, 0, 0],
+    [-3 * ATTEN, 14 * ATTEN, 0],
+    [-4 * ATTEN, 0, 0],
+    [-3 * ATTEN, -14 * ATTEN, 0],
+    [-4 * ATTEN, 0, 0],
   ]);
   pushQuat(tracks, used, lUA, t, [
-    [0, 0, -18 * D2R],
-    [0, 0, -42 * D2R],
-    [0, 0, -12 * D2R],
-    [0, 0, -4 * D2R],
-    [0, 0, -18 * D2R],
-    [0, 0, -42 * D2R],
-    [0, 0, -12 * D2R],
-    [0, 0, -4 * D2R],
-    [0, 0, -18 * D2R],
+    [0, 0, -18 * ATTEN],
+    [0, 0, -42 * ATTEN],
+    [0, 0, -12 * ATTEN],
+    [0, 0, -4 * ATTEN],
+    [0, 0, -18 * ATTEN],
+    [0, 0, -42 * ATTEN],
+    [0, 0, -12 * ATTEN],
+    [0, 0, -4 * ATTEN],
+    [0, 0, -18 * ATTEN],
   ]);
   pushQuat(tracks, used, rUA, t, [
-    [0, 0, 18 * D2R],
-    [0, 0, 4 * D2R],
-    [0, 0, 12 * D2R],
-    [0, 0, 42 * D2R],
-    [0, 0, 18 * D2R],
-    [0, 0, 4 * D2R],
-    [0, 0, 12 * D2R],
-    [0, 0, 42 * D2R],
-    [0, 0, 18 * D2R],
+    [0, 0, 18 * ATTEN],
+    [0, 0, 4 * ATTEN],
+    [0, 0, 12 * ATTEN],
+    [0, 0, 42 * ATTEN],
+    [0, 0, 18 * ATTEN],
+    [0, 0, 4 * ATTEN],
+    [0, 0, 12 * ATTEN],
+    [0, 0, 42 * ATTEN],
+    [0, 0, 18 * ATTEN],
   ]);
   pushQuat(tracks, used, lHand, t, [
-    [0, 0, -5 * D2R],
-    [0, 0, -16 * D2R],
-    [0, 0, -4 * D2R],
-    [0, 0, -2 * D2R],
-    [0, 0, -5 * D2R],
-    [0, 0, -16 * D2R],
-    [0, 0, -4 * D2R],
-    [0, 0, -2 * D2R],
-    [0, 0, -5 * D2R],
+    [0, 0, -5 * ATTEN],
+    [0, 0, -16 * ATTEN],
+    [0, 0, -4 * ATTEN],
+    [0, 0, -2 * ATTEN],
+    [0, 0, -5 * ATTEN],
+    [0, 0, -16 * ATTEN],
+    [0, 0, -4 * ATTEN],
+    [0, 0, -2 * ATTEN],
+    [0, 0, -5 * ATTEN],
   ]);
   pushQuat(tracks, used, rHand, t, [
-    [0, 0, 5 * D2R],
-    [0, 0, 2 * D2R],
-    [0, 0, 4 * D2R],
-    [0, 0, 16 * D2R],
-    [0, 0, 5 * D2R],
-    [0, 0, 2 * D2R],
-    [0, 0, 4 * D2R],
-    [0, 0, 16 * D2R],
-    [0, 0, 5 * D2R],
+    [0, 0, 5 * ATTEN],
+    [0, 0, 2 * ATTEN],
+    [0, 0, 4 * ATTEN],
+    [0, 0, 16 * ATTEN],
+    [0, 0, 5 * ATTEN],
+    [0, 0, 2 * ATTEN],
+    [0, 0, 4 * ATTEN],
+    [0, 0, 16 * ATTEN],
+    [0, 0, 5 * ATTEN],
   ]);
   pushPalmShape(
     tracks,
@@ -1925,68 +1929,68 @@ function buildSneakyWalk(arm: Armature): THREE.AnimationClip | null {
   );
   pushQuat(tracks, used, lUL, t, [
     [0, 0, 0],
-    [24 * D2R, 0, 0],
+    [24 * ATTEN, 0, 0],
     [0, 0, 0],
-    [-18 * D2R, 0, 0],
+    [-18 * ATTEN, 0, 0],
     [0, 0, 0],
-    [24 * D2R, 0, 0],
+    [24 * ATTEN, 0, 0],
     [0, 0, 0],
-    [-18 * D2R, 0, 0],
+    [-18 * ATTEN, 0, 0],
     [0, 0, 0],
   ]);
   pushQuat(tracks, used, rUL, t, [
     [0, 0, 0],
-    [-18 * D2R, 0, 0],
+    [-18 * ATTEN, 0, 0],
     [0, 0, 0],
-    [24 * D2R, 0, 0],
+    [24 * ATTEN, 0, 0],
     [0, 0, 0],
-    [-18 * D2R, 0, 0],
+    [-18 * ATTEN, 0, 0],
     [0, 0, 0],
-    [24 * D2R, 0, 0],
+    [24 * ATTEN, 0, 0],
     [0, 0, 0],
   ]);
   pushQuat(tracks, used, lLL, t, [
     [0, 0, 0],
-    [-18 * D2R, 0, 0],
+    [-18 * ATTEN, 0, 0],
     [0, 0, 0],
-    [22 * D2R, 0, 0],
+    [22 * ATTEN, 0, 0],
     [0, 0, 0],
-    [-18 * D2R, 0, 0],
+    [-18 * ATTEN, 0, 0],
     [0, 0, 0],
-    [22 * D2R, 0, 0],
+    [22 * ATTEN, 0, 0],
     [0, 0, 0],
   ]);
   pushQuat(tracks, used, rLL, t, [
     [0, 0, 0],
-    [22 * D2R, 0, 0],
+    [22 * ATTEN, 0, 0],
     [0, 0, 0],
-    [-18 * D2R, 0, 0],
+    [-18 * ATTEN, 0, 0],
     [0, 0, 0],
-    [22 * D2R, 0, 0],
+    [22 * ATTEN, 0, 0],
     [0, 0, 0],
-    [-18 * D2R, 0, 0],
+    [-18 * ATTEN, 0, 0],
     [0, 0, 0],
   ]);
   pushQuat(tracks, used, lFoot, t, [
     [0, 0, 0],
-    [10 * D2R, 0, 0],
+    [10 * ATTEN, 0, 0],
     [0, 0, 0],
-    [-8 * D2R, 0, 0],
+    [-8 * ATTEN, 0, 0],
     [0, 0, 0],
-    [10 * D2R, 0, 0],
+    [10 * ATTEN, 0, 0],
     [0, 0, 0],
-    [-8 * D2R, 0, 0],
+    [-8 * ATTEN, 0, 0],
     [0, 0, 0],
   ]);
   pushQuat(tracks, used, rFoot, t, [
     [0, 0, 0],
-    [-8 * D2R, 0, 0],
+    [-8 * ATTEN, 0, 0],
     [0, 0, 0],
-    [10 * D2R, 0, 0],
+    [10 * ATTEN, 0, 0],
     [0, 0, 0],
-    [-8 * D2R, 0, 0],
+    [-8 * ATTEN, 0, 0],
     [0, 0, 0],
-    [10 * D2R, 0, 0],
+    [10 * ATTEN, 0, 0],
     [0, 0, 0],
   ]);
 
@@ -2022,90 +2026,90 @@ function buildThinkingGesture(arm: Armature): THREE.AnimationClip | null {
   ]);
   pushQuat(tracks, used, spine, t, [
     [0, 0, 0],
-    [4 * D2R, -7 * D2R, 0],
-    [3 * D2R, -7 * D2R, 0],
-    [5 * D2R, 6 * D2R, 0],
-    [4 * D2R, 6 * D2R, 0],
-    [5 * D2R, -5 * D2R, 0],
-    [3 * D2R, -5 * D2R, 0],
-    [2 * D2R, 0, 0],
+    [4 * ATTEN, -7 * ATTEN, 0],
+    [3 * ATTEN, -7 * ATTEN, 0],
+    [5 * ATTEN, 6 * ATTEN, 0],
+    [4 * ATTEN, 6 * ATTEN, 0],
+    [5 * ATTEN, -5 * ATTEN, 0],
+    [3 * ATTEN, -5 * ATTEN, 0],
+    [2 * ATTEN, 0, 0],
     [0, 0, 0],
   ]);
   pushQuat(tracks, used, head, t, [
     [0, 0, 0],
-    [8 * D2R, -16 * D2R, -5 * D2R],
-    [5 * D2R, -16 * D2R, -5 * D2R],
-    [10 * D2R, 10 * D2R, 5 * D2R],
-    [6 * D2R, 10 * D2R, 5 * D2R],
-    [9 * D2R, -8 * D2R, -4 * D2R],
-    [4 * D2R, -8 * D2R, -4 * D2R],
+    [8 * ATTEN, -16 * ATTEN, -5 * ATTEN],
+    [5 * ATTEN, -16 * ATTEN, -5 * ATTEN],
+    [10 * ATTEN, 10 * ATTEN, 5 * ATTEN],
+    [6 * ATTEN, 10 * ATTEN, 5 * ATTEN],
+    [9 * ATTEN, -8 * ATTEN, -4 * ATTEN],
+    [4 * ATTEN, -8 * ATTEN, -4 * ATTEN],
     [0, 0, 0],
     [0, 0, 0],
   ]);
   pushQuat(tracks, used, rUA, t, [
     [0, 0, 0],
-    [0, 0, 45 * D2R],
-    [0, 0, 72 * D2R],
-    [0, 0, 68 * D2R],
-    [0, 0, 74 * D2R],
-    [0, 0, 70 * D2R],
-    [0, 0, 66 * D2R],
-    [0, 0, 24 * D2R],
+    [0, 0, 45 * ATTEN],
+    [0, 0, 72 * ATTEN],
+    [0, 0, 68 * ATTEN],
+    [0, 0, 74 * ATTEN],
+    [0, 0, 70 * ATTEN],
+    [0, 0, 66 * ATTEN],
+    [0, 0, 24 * ATTEN],
     [0, 0, 0],
   ]);
   pushQuat(tracks, used, rLA, t, [
     [0, 0, 0],
-    [0, -18 * D2R, 0],
-    [0, -52 * D2R, 0],
-    [0, -46 * D2R, 0],
-    [0, -58 * D2R, 0],
-    [0, -48 * D2R, 0],
-    [0, -54 * D2R, 0],
-    [0, -14 * D2R, 0],
+    [0, -18 * ATTEN, 0],
+    [0, -52 * ATTEN, 0],
+    [0, -46 * ATTEN, 0],
+    [0, -58 * ATTEN, 0],
+    [0, -48 * ATTEN, 0],
+    [0, -54 * ATTEN, 0],
+    [0, -14 * ATTEN, 0],
     [0, 0, 0],
   ]);
   pushQuat(tracks, used, lUA, t, [
     [0, 0, 0],
-    [0, 0, -24 * D2R],
-    [0, 0, -34 * D2R],
-    [0, 0, -30 * D2R],
-    [0, 0, -36 * D2R],
-    [0, 0, -30 * D2R],
-    [0, 0, -34 * D2R],
-    [0, 0, -12 * D2R],
+    [0, 0, -24 * ATTEN],
+    [0, 0, -34 * ATTEN],
+    [0, 0, -30 * ATTEN],
+    [0, 0, -36 * ATTEN],
+    [0, 0, -30 * ATTEN],
+    [0, 0, -34 * ATTEN],
+    [0, 0, -12 * ATTEN],
     [0, 0, 0],
   ]);
   pushQuat(tracks, used, lLA, t, [
     [0, 0, 0],
-    [0, 14 * D2R, 0],
-    [0, 24 * D2R, 0],
-    [0, 18 * D2R, 0],
-    [0, 26 * D2R, 0],
-    [0, 18 * D2R, 0],
-    [0, 22 * D2R, 0],
-    [0, 8 * D2R, 0],
+    [0, 14 * ATTEN, 0],
+    [0, 24 * ATTEN, 0],
+    [0, 18 * ATTEN, 0],
+    [0, 26 * ATTEN, 0],
+    [0, 18 * ATTEN, 0],
+    [0, 22 * ATTEN, 0],
+    [0, 8 * ATTEN, 0],
     [0, 0, 0],
   ]);
   pushQuat(tracks, used, rHand, t, [
     [0, 0, 0],
-    [0, 0, 8 * D2R],
-    [0, 0, 18 * D2R],
-    [0, 0, 14 * D2R],
-    [0, 0, 18 * D2R],
-    [0, 0, 16 * D2R],
-    [0, 0, 18 * D2R],
-    [0, 0, 6 * D2R],
+    [0, 0, 8 * ATTEN],
+    [0, 0, 18 * ATTEN],
+    [0, 0, 14 * ATTEN],
+    [0, 0, 18 * ATTEN],
+    [0, 0, 16 * ATTEN],
+    [0, 0, 18 * ATTEN],
+    [0, 0, 6 * ATTEN],
     [0, 0, 0],
   ]);
   pushQuat(tracks, used, lHand, t, [
     [0, 0, 0],
-    [0, 0, -4 * D2R],
-    [0, 0, -7 * D2R],
-    [0, 0, -5 * D2R],
-    [0, 0, -8 * D2R],
-    [0, 0, -5 * D2R],
-    [0, 0, -7 * D2R],
-    [0, 0, -2 * D2R],
+    [0, 0, -4 * ATTEN],
+    [0, 0, -7 * ATTEN],
+    [0, 0, -5 * ATTEN],
+    [0, 0, -8 * ATTEN],
+    [0, 0, -5 * ATTEN],
+    [0, 0, -7 * ATTEN],
+    [0, 0, -2 * ATTEN],
     [0, 0, 0],
   ]);
   pushPalmShape(
