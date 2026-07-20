@@ -8,6 +8,7 @@ import { detectArmature } from './armature';
 import type { Armature } from './armature';
 import { createProcAnimations } from './procAnim';
 import type { ProcAnimations } from './procAnim';
+import { dlog } from './debug';
 
 export interface Viewer {
   scene: THREE.Scene;
@@ -25,6 +26,8 @@ export interface Viewer {
   frameHead: () => void;
   frameBody: () => void;
   loadGLB: (source: string | ArrayBuffer, fileName?: string | null) => Promise<void>;
+  /** Stops the render loop and releases every GPU resource this viewer owns. */
+  dispose: () => void;
   onModelLoaded: ((viewer: Viewer) => void) | null;
 }
 
@@ -102,6 +105,7 @@ export function createViewer(
     frameHead,
     frameBody,
     loadGLB,
+    dispose,
     onModelLoaded: null, // set by main.ts
   };
 
@@ -121,18 +125,35 @@ export function createViewer(
     camera.updateProjectionMatrix();
   }
   resize();
-  new ResizeObserver(resize).observe(canvas);
+  const resizeObserver = new ResizeObserver(resize);
+  resizeObserver.observe(canvas);
 
   const clock = new THREE.Clock();
+  let rafId = 0;
+  let disposed = false;
   function tick() {
+    if (disposed) return;
     const dt = clock.getDelta();
     if (idleUpdate) idleUpdate(dt);
     if (viewer.mixer) viewer.mixer.update(dt);
     controls.update();
     renderer.render(scene, camera);
-    requestAnimationFrame(tick);
+    rafId = requestAnimationFrame(tick);
   }
-  requestAnimationFrame(tick);
+  rafId = requestAnimationFrame(tick);
+
+  // ----- Full teardown (for consumers that mount/unmount the viewer) -----
+  function dispose() {
+    if (disposed) return;
+    disposed = true;
+    cancelAnimationFrame(rafId);
+    resizeObserver.disconnect();
+    controls.dispose();
+    disposeAvatar();
+    ground.geometry.dispose();
+    ground.material.dispose();
+    renderer.dispose();
+  }
 
   // ----- Disposal of previous avatar -----
   function disposeAvatar() {
@@ -261,7 +282,7 @@ export function createViewer(
     controls.maxDistance = dist * 6;
     controls.update();
 
-    console.log('[viewer] loaded', fileName || (typeof source === 'string' ? source : 'buffer'), {
+    dlog('loaded', fileName || (typeof source === 'string' ? source : 'buffer'), {
       bones: armature.bones.size,
       rig: armature.rig,
       animations: [...viewer.animations.keys()],

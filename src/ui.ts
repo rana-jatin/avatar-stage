@@ -2,6 +2,7 @@ import { setMorph, getMorph, resetMorphs, groupByRegion } from './morphs';
 import { PRESETS, tweenPreset } from './presets';
 import { textToVisemes, playVisemeSequence } from './lipsync';
 import { ROLES } from './armature';
+import { dlog } from './debug';
 import type { Viewer } from './viewer';
 import type { IdleController } from './idle';
 import type { AnimationAction } from 'three';
@@ -35,6 +36,11 @@ function panel(title: string, open = false) {
   d.append(body);
   return { root: d, body };
 }
+
+// Crossfade length for starting/stopping clips. The stop timer waits out the
+// fade (plus a frame) before releasing the action.
+const FADE_SEC = 0.25;
+const STOP_DELAY_MS = FADE_SEC * 1000 + 10;
 
 const ROLE_LABELS: Record<string, string> = {
   hip: 'Hip',
@@ -154,9 +160,9 @@ export function buildUI(container: HTMLElement, ctx: BuildUIContext) {
 
   function stopAnimation() {
     if (currentAction) {
-      currentAction.fadeOut(0.25);
+      currentAction.fadeOut(FADE_SEC);
       const ending = currentAction;
-      setTimeout(() => ending.stop(), 260);
+      setTimeout(() => ending.stop(), STOP_DELAY_MS);
       animBtns.get(currentAction)?.classList.remove('active');
       currentAction = null;
     }
@@ -166,10 +172,10 @@ export function buildUI(container: HTMLElement, ctx: BuildUIContext) {
   function playAnimation(action: AnimationAction) {
     if (currentAction === action) return;
     if (currentAction) {
-      currentAction.fadeOut(0.25);
+      currentAction.fadeOut(FADE_SEC);
       animBtns.get(currentAction)?.classList.remove('active');
     }
-    action.reset().setEffectiveWeight(1).fadeIn(0.25).play();
+    action.reset().setEffectiveWeight(1).fadeIn(FADE_SEC).play();
     animBtns.get(action)?.classList.add('active');
     currentAction = action;
     idle.suppressHeadSway(true);
@@ -205,20 +211,25 @@ export function buildUI(container: HTMLElement, ctx: BuildUIContext) {
     let currentProc: AnimationAction | null = null;
     function stopProc() {
       if (currentProc) {
-        currentProc.fadeOut(0.25);
+        const ending = currentProc;
+        ending.fadeOut(FADE_SEC);
         setTimeout(() => {
+          // The action may already be uncached if the model was swapped
+          // during the fade.
           try {
-            currentProc?.stop();
-          } catch {}
-        }, 260);
+            ending.stop();
+          } catch (err) {
+            dlog('procedural stop failed', err);
+          }
+        }, STOP_DELAY_MS);
         currentProc = null;
       }
       idle.suppressHeadSway(false);
     }
     function playProc(action: AnimationAction) {
       if (currentProc === action) return;
-      if (currentProc) currentProc.fadeOut(0.25);
-      action.reset().setEffectiveWeight(1).fadeIn(0.25).play();
+      if (currentProc) currentProc.fadeOut(FADE_SEC);
+      action.reset().setEffectiveWeight(1).fadeIn(FADE_SEC).play();
       currentProc = action;
       // Procedural anims are additive; idle sway is fine to continue.
     }

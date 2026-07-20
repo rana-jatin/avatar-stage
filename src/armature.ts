@@ -8,6 +8,7 @@
 //      from bone names, so each entry lists both spellings.)
 
 import type { Bone, Object3D, SkinnedMesh } from 'three';
+import { dlog } from './debug';
 
 const ROLE_ALIASES = {
   hip: [
@@ -517,7 +518,7 @@ export function detectArmature(root: Object3D): Armature {
   const rig = useSmurf ? 'smurf' : inferRig(resolved.head?.name);
 
   if (!resolved.head || !resolved.hip) {
-    console.warn('[armature] could not resolve core roles — animations may be incomplete', {
+    dlog('could not resolve core roles — animations may be incomplete', {
       head: !!resolved.head,
       hip: !!resolved.hip,
       rig,

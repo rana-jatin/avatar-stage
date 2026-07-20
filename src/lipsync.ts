@@ -144,11 +144,3 @@ export function playVisemeSequence(
     clearVisemes(morphIndex);
   };
 }
-
-// Placeholder for future TTS hookup — same signatures TalkingHead uses.
-export async function speak(_text: string) {
-  /* not implemented */
-}
-export async function speakAudio(_payload: unknown) {
-  /* not implemented */
-}

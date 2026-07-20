@@ -2,6 +2,9 @@ import { createViewer } from './viewer';
 import type { Viewer } from './viewer';
 import { createIdle } from './idle';
 import { buildUI } from './ui';
+import { setDebug } from './debug';
+
+setDebug(new URLSearchParams(window.location.search).has('debug'));
 
 // Bundled demo model, served from public/. BASE_URL keeps the path correct
 // when the site is deployed under a sub-path (e.g. GitHub Pages).
