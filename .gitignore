@@ -1,4 +1,7 @@
 node_modules/
 dist/
+dist-demo/
+coverage/
+.vite/
 *.log
 .DS_Store
