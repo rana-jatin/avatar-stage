@@ -37,15 +37,29 @@ const ROLE_LABELS = {
 };
 
 export function buildUI(container, ctx) {
-  const { viewer, idle } = ctx;
-  const { animations, morphIndex, armature, procAnimations, frameHead, frameBody } = viewer;
+  const { viewer, idle, onUploadFile } = ctx;
+  const { animations, morphIndex, armature, procAnimations, frameHead, frameBody, currentFileName } = viewer;
 
   container.innerHTML = '';
+
+  // ----- Upload -----
+  const up = panel('Upload', true);
+  const fileInput = el('input', { type: 'file', accept: '.glb,.gltf', className: 'file-hidden' });
+  const uploadBtn = el('button', { className: 'btn wide' }, 'Upload GLB / glTF');
+  uploadBtn.addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', () => {
+    const f = fileInput.files?.[0];
+    if (f) onUploadFile(f);
+    fileInput.value = '';
+  });
+  const fileLabel = el('div', { className: 'file-name' }, currentFileName || '(demo model — drop a GLB on the stage to swap)');
+  up.body.append(uploadBtn, fileInput, fileLabel);
+  container.append(up.root);
 
   // ----- Armature (summary + bone remap) -----
   const armP = panel('Armature', false);
   if (!armature || !armature.hasSkeleton) {
-    armP.body.append(el('div', { className: 'empty' }, 'No skeleton detected in the smurf model.'));
+    armP.body.append(el('div', { className: 'empty' }, 'No skeleton detected in this GLB.'));
   } else {
     const meta = el('div', { className: 'meta-row' });
     meta.append(
@@ -54,8 +68,8 @@ export function buildUI(container, ctx) {
     );
     armP.body.append(meta);
 
-    // Per-role bone remap: lets you reassign which smurf bone drives each
-    // humanoid role when the default mapping isn't quite right.
+    // Per-role bone remap: lets you reassign which bone drives each humanoid
+    // role when the detected mapping isn't quite right.
     const allBoneNames = [...armature.bones.keys()].sort();
     const overrideGrid = el('div', { className: 'override-grid' });
     for (const role of ROLES) {
@@ -113,7 +127,7 @@ export function buildUI(container, ctx) {
   }
 
   if (animations.size === 0) {
-    anim.body.append(el('div', { className: 'empty' }, 'No embedded animations in the smurf model. Use the Procedural Animations panel.'));
+    anim.body.append(el('div', { className: 'empty' }, 'No embedded animations in this model. Use the Procedural Animations panel.'));
   } else {
     const grid = el('div', { className: 'btn-grid' });
     for (const [name, action] of animations) {

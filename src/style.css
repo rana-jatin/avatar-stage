@@ -58,6 +58,14 @@ details.panel > summary::before {
   transition: transform 120ms ease;
 }
 details.panel[open] > summary::before { transform: rotate(90deg); }
+
+.file-hidden { display: none; }
+.file-name {
+  font-size: 11px;
+  color: #8a8f99;
+  margin-top: 6px;
+  word-break: break-all;
+}
 details.panel > .body {
   padding: 4px 12px 12px;
   border-top: 1px solid #2a2d33;

@@ -5,8 +5,8 @@ import { discoverMorphs } from './morphs.js';
 import { detectArmature } from './armature.js';
 import { createProcAnimations } from './procAnim.js';
 
-// One-time scene/renderer setup. Returns a viewer handle whose .loadGLB(url)
-// loads the smurf model into the scene.
+// One-time scene/renderer setup. Returns a viewer handle whose
+// .loadGLB(source) loads a model from a URL string or an ArrayBuffer.
 export async function createViewer(canvas, onStatus = () => {}) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -66,7 +66,7 @@ export async function createViewer(canvas, onStatus = () => {}) {
     currentFileName: null,
     setIdleUpdate(fn) { idleUpdate = fn; },
     frameHead, frameBody,
-    loadGLB,             // async (url: string)
+    loadGLB,             // async (source: string | ArrayBuffer, fileName?)
     onModelLoaded: null, // set by main.js
   };
 
@@ -128,23 +128,29 @@ export async function createViewer(canvas, onStatus = () => {}) {
     viewer.morphIndex = { byName: new Map(), allNames: [], arkit: [] };
   }
 
-  // ----- Load the smurf GLB from a URL -----
-  async function loadGLB(url, fileName = null) {
+  // ----- Load a GLB from either a URL string or an ArrayBuffer -----
+  async function loadGLB(source, fileName = null) {
     onStatus('Loading GLB…');
     let gltf;
     try {
-      gltf = await new Promise((resolve, reject) => {
-        loader.load(
-          url, resolve,
-          (xhr) => {
-            if (xhr.lengthComputable) {
-              const pct = Math.round((xhr.loaded / xhr.total) * 100);
-              onStatus(`Loading GLB… ${pct}%`);
-            }
-          },
-          reject,
-        );
-      });
+      if (typeof source === 'string') {
+        gltf = await new Promise((resolve, reject) => {
+          loader.load(
+            source, resolve,
+            (xhr) => {
+              if (xhr.lengthComputable) {
+                const pct = Math.round((xhr.loaded / xhr.total) * 100);
+                onStatus(`Loading GLB… ${pct}%`);
+              }
+            },
+            reject,
+          );
+        });
+      } else {
+        gltf = await new Promise((resolve, reject) => {
+          loader.parse(source, '', resolve, reject);
+        });
+      }
     } catch (err) {
       onStatus(`Failed to load GLB: ${err.message || err}`);
       throw err;
@@ -215,7 +221,7 @@ export async function createViewer(canvas, onStatus = () => {}) {
     controls.maxDistance = dist * 6;
     controls.update();
 
-    console.log('[viewer] loaded', fileName || url, {
+    console.log('[viewer] loaded', fileName || (typeof source === 'string' ? source : 'buffer'), {
       bones: viewer.armature.bones.size,
       rig: viewer.armature.rig,
       animations: [...viewer.animations.keys()],
