@@ -4,10 +4,9 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { discoverMorphs } from './morphs.js';
 import { detectArmature } from './armature.js';
 import { createProcAnimations } from './procAnim.js';
-import { loadLibrary, buildLibraryActions } from './retarget.js';
 
-// One-time scene/renderer setup. Returns a viewer handle that supports
-// .loadGLB(source) to swap models without tearing down the scene.
+// One-time scene/renderer setup. Returns a viewer handle whose .loadGLB(url)
+// loads the smurf model into the scene.
 export async function createViewer(canvas, onStatus = () => {}) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -54,9 +53,8 @@ export async function createViewer(canvas, onStatus = () => {}) {
   controls.maxPolarAngle = Math.PI * 0.7;
 
   const loader = new GLTFLoader();
-  const libraryPromise = loadLibrary();
 
-  // --- Per-model state (rebuilt by loadGLB) ---
+  // --- Model state ---
   const viewer = {
     scene, camera, renderer, controls,
     avatar: null,
@@ -64,12 +62,11 @@ export async function createViewer(canvas, onStatus = () => {}) {
     mixer: null,
     animations: new Map(),
     procAnimations: { actions: new Map(), status: [] },
-    libraryActions: new Map(),
     morphIndex: { byName: new Map(), allNames: [], arkit: [] },
     currentFileName: null,
     setIdleUpdate(fn) { idleUpdate = fn; },
     frameHead, frameBody,
-    loadGLB,           // async (source: ArrayBuffer | string)
+    loadGLB,             // async (url: string)
     onModelLoaded: null, // set by main.js
   };
 
@@ -128,33 +125,26 @@ export async function createViewer(canvas, onStatus = () => {}) {
     viewer.mixer = null;
     viewer.animations = new Map();
     viewer.procAnimations = { actions: new Map(), status: [] };
-    viewer.libraryActions = new Map();
     viewer.morphIndex = { byName: new Map(), allNames: [], arkit: [] };
   }
 
-  // ----- Load a GLB from either a URL string or an ArrayBuffer -----
-  async function loadGLB(source, fileName = null) {
+  // ----- Load the smurf GLB from a URL -----
+  async function loadGLB(url, fileName = null) {
     onStatus('Loading GLB…');
     let gltf;
     try {
-      if (typeof source === 'string') {
-        gltf = await new Promise((resolve, reject) => {
-          loader.load(
-            source, resolve,
-            (xhr) => {
-              if (xhr.lengthComputable) {
-                const pct = Math.round((xhr.loaded / xhr.total) * 100);
-                onStatus(`Loading GLB… ${pct}%`);
-              }
-            },
-            reject,
-          );
-        });
-      } else {
-        gltf = await new Promise((resolve, reject) => {
-          loader.parse(source, '', resolve, reject);
-        });
-      }
+      gltf = await new Promise((resolve, reject) => {
+        loader.load(
+          url, resolve,
+          (xhr) => {
+            if (xhr.lengthComputable) {
+              const pct = Math.round((xhr.loaded / xhr.total) * 100);
+              onStatus(`Loading GLB… ${pct}%`);
+            }
+          },
+          reject,
+        );
+      });
     } catch (err) {
       onStatus(`Failed to load GLB: ${err.message || err}`);
       throw err;
@@ -225,20 +215,7 @@ export async function createViewer(canvas, onStatus = () => {}) {
     controls.maxDistance = dist * 6;
     controls.update();
 
-    // Library animations (lazy / async).
-    try {
-      const lib = await libraryPromise;
-      if (lib.entries.length > 0) {
-        const libActions = await buildLibraryActions(lib.entries, viewer.armature, viewer.mixer);
-        viewer.libraryActions = libActions;
-        for (const [name, action] of libActions) viewer.animations.set(name, action);
-      }
-      if (lib.error) console.warn('[library] manifest error:', lib.error);
-    } catch (e) {
-      console.warn('[library] failed:', e);
-    }
-
-    console.log('[viewer] loaded', fileName || source, {
+    console.log('[viewer] loaded', fileName || url, {
       bones: viewer.armature.bones.size,
       rig: viewer.armature.rig,
       animations: [...viewer.animations.keys()],

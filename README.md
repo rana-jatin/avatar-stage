@@ -1,22 +1,24 @@
-# Avatar Animation Dashboard
+# Smurf Animation Dashboard
 
-This is a Vite-based Three.js dashboard for loading and inspecting avatar GLB files. It ships with a lightweight UI for viewing the model, checking animation and morph counts, and uploading alternate GLB assets at runtime.
+A Vite + Three.js dashboard dedicated to the smurf avatar (`Smur_male6.glb`). It
+loads the smurf, runs procedurally generated body animations and facial idle
+behaviors, and exposes morph/expression/lip-sync controls for inspection.
 
 ## Features
 
-- Interactive 3D avatar viewer powered by `three`
-- Upload a local `.glb` file to inspect a different model
-- Animation, procedural action, and morph summary in the UI
-- Best-effort auto-load of the bundled `Smur_male6.glb` asset when available
+- Interactive 3D smurf viewer powered by `three`
+- Procedural animations tuned for the smurf rig (wave, dance, bhangra, clap,
+  punch combo, jump twist, sneaky walk, thinking pose, and more)
+- Idle behaviors: auto-blink, breathing, head sway
+- Expression presets and a no-audio lip-sync viseme test
+- Searchable blendshape (morph target) sliders
 
-## Using The Dashboard
+## Panels
 
-When a model is loaded, the sidebar is split into panels for the main tasks:
-
-- Upload: choose a `.glb` or `.gltf` file from your machine
-- Armature: inspect the detected skeleton and override bone mapping when needed
-- Animations: play embedded clips and stop the current animation
-- Procedural Animations: trigger rig-driven motions such as idle-friendly actions
+- Armature: skeleton summary plus a per-role bone remap to reassign which smurf
+  bone drives each humanoid role
+- Animations: play any clips embedded in the GLB and stop the current one
+- Procedural Animations: trigger rig-driven motions
 - Expression presets: apply preset facial expressions
 - Idle behaviors: toggle auto-blink, breathing, and head sway
 - Camera: frame the head or the full body
@@ -30,7 +32,8 @@ npm install
 npm run dev
 ```
 
-Open the local Vite URL shown in the terminal, then use the upload UI to load a GLB file if needed.
+Open the local Vite URL shown in the terminal. The smurf model
+(`Smur_male6.glb`, one directory above the dashboard) loads automatically.
 
 ## Scripts
 
@@ -40,5 +43,6 @@ Open the local Vite URL shown in the terminal, then use the upload UI to load a 
 
 ## Notes
 
-- The app expects the bundled model at `Smur_male6.glb` if you want the default avatar to load automatically.
+- The app expects the smurf model at `../Smur_male6.glb` relative to the
+  dashboard folder.
 - `node_modules/` and build output are ignored in version control.

@@ -1,8 +1,7 @@
 import { setMorph } from './morphs.js';
 
-// Idle behaviors are bound to the currently resolved armature (head/spine).
-// `rebind(newArmature, newMorphIndex)` swaps targets when a new GLB is loaded
-// or when the user manually overrides bone roles.
+// Idle behaviors are bound to the smurf armature (head/spine) + morph index.
+// `rebind(armature, morphIndex)` is called once after the model loads.
 
 export function createIdle(armature, morphIndex) {
   const state = {

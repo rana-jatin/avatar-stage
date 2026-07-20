@@ -29,35 +29,23 @@ const ROLE_LABELS = {
   neck: 'Neck',
   head: 'Head',
   leftShoulder: 'L Shoulder',  leftUpperArm: 'L Upper Arm', leftLowerArm: 'L Forearm', leftHand: 'L Hand',
+  leftThumbPalm: 'L Thumb Palm', leftIndexPalm: 'L Index Palm', leftMiddlePalm: 'L Middle Palm', leftRingPalm: 'L Ring Palm', leftPinkyPalm: 'L Pinky Palm',
   rightShoulder: 'R Shoulder', rightUpperArm: 'R Upper Arm', rightLowerArm: 'R Forearm', rightHand: 'R Hand',
+  rightThumbPalm: 'R Thumb Palm', rightIndexPalm: 'R Index Palm', rightMiddlePalm: 'R Middle Palm', rightRingPalm: 'R Ring Palm', rightPinkyPalm: 'R Pinky Palm',
   leftUpperLeg: 'L Thigh',  leftLowerLeg: 'L Shin',  leftFoot: 'L Foot',
   rightUpperLeg: 'R Thigh', rightLowerLeg: 'R Shin', rightFoot: 'R Foot',
 };
 
 export function buildUI(container, ctx) {
-  const { viewer, idle, onUploadFile } = ctx;
-  const { mixer, animations, morphIndex, armature, procAnimations, frameHead, frameBody, currentFileName } = viewer;
+  const { viewer, idle } = ctx;
+  const { animations, morphIndex, armature, procAnimations, frameHead, frameBody } = viewer;
 
   container.innerHTML = '';
 
-  // ----- Upload -----
-  const up = panel('Upload', true);
-  const fileInput = el('input', { type: 'file', accept: '.glb,.gltf', className: 'file-hidden' });
-  const uploadBtn = el('button', { className: 'btn wide' }, 'Upload GLB / glTF');
-  uploadBtn.addEventListener('click', () => fileInput.click());
-  fileInput.addEventListener('change', () => {
-    const f = fileInput.files?.[0];
-    if (f) onUploadFile(f);
-    fileInput.value = '';
-  });
-  const fileLabel = el('div', { className: 'file-name' }, currentFileName || '(no file uploaded)');
-  up.body.append(uploadBtn, fileInput, fileLabel);
-  container.append(up.root);
-
-  // ----- Armature -----
+  // ----- Armature (summary + bone remap) -----
   const armP = panel('Armature', false);
   if (!armature || !armature.hasSkeleton) {
-    armP.body.append(el('div', { className: 'empty' }, 'No skeleton detected in this GLB.'));
+    armP.body.append(el('div', { className: 'empty' }, 'No skeleton detected in the smurf model.'));
   } else {
     const meta = el('div', { className: 'meta-row' });
     meta.append(
@@ -66,6 +54,8 @@ export function buildUI(container, ctx) {
     );
     armP.body.append(meta);
 
+    // Per-role bone remap: lets you reassign which smurf bone drives each
+    // humanoid role when the default mapping isn't quite right.
     const allBoneNames = [...armature.bones.keys()].sort();
     const overrideGrid = el('div', { className: 'override-grid' });
     for (const role of ROLES) {
@@ -82,19 +72,19 @@ export function buildUI(container, ctx) {
       sel.addEventListener('change', () => {
         armature.setOverride(role, sel.value);
         lbl.className = sel.value ? '' : 'missing';
-        // Idle behaviors need to re-pick head/spine bones.
+        // Idle behaviors need to re-pick head/spine bones immediately.
         idle.rebind(armature, morphIndex);
       });
       row.append(lbl, sel);
       overrideGrid.append(row);
     }
     armP.body.append(overrideGrid);
-    const hint = el('div', { className: 'hint' }, 'Changing a bone here updates idle behaviors immediately. Procedural animations will use the new mapping on next play.');
+    const hint = el('div', { className: 'hint' }, 'Changing a bone here updates idle behaviors immediately. Procedural animations use the mapping captured when the model loaded.');
     armP.body.append(hint);
   }
   container.append(armP.root);
 
-  // ----- Animations (embedded + library) -----
+  // ----- Animations -----
   const anim = panel('Animations', true);
   let currentAction = null;
   const animBtns = new Map();
@@ -123,7 +113,7 @@ export function buildUI(container, ctx) {
   }
 
   if (animations.size === 0) {
-    anim.body.append(el('div', { className: 'empty' }, 'No embedded animations. Try the Procedural Animations panel or drop clips in /animations/.'));
+    anim.body.append(el('div', { className: 'empty' }, 'No embedded animations in the smurf model. Use the Procedural Animations panel.'));
   } else {
     const grid = el('div', { className: 'btn-grid' });
     for (const [name, action] of animations) {
@@ -139,7 +129,7 @@ export function buildUI(container, ctx) {
   container.append(anim.root);
 
   // ----- Procedural animations -----
-  const proc = panel('Procedural Animations', true);
+  const proc = panel(`Procedural Animations (${procAnimations.status.length})`, true);
   if (!armature || !armature.hasSkeleton) {
     proc.body.append(el('div', { className: 'empty' }, 'Requires a skinned mesh with a skeleton.'));
   } else {

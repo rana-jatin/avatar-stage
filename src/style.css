@@ -150,14 +150,6 @@ details.panel > .body {
 }
 .search:focus { outline: 1px solid #5a73b0; border-color: #5a73b0; }
 
-.file-hidden { display: none; }
-.file-name {
-  font-size: 11px;
-  color: #8a8f99;
-  margin-top: 6px;
-  word-break: break-all;
-}
-
 .meta-row {
   display: flex;
   flex-wrap: wrap;
