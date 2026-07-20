@@ -11,7 +11,9 @@ const canvas = document.getElementById('stage');
 const panelsEl = document.getElementById('panels');
 const statusEl = document.getElementById('status');
 
-function setStatus(msg) { statusEl.textContent = msg; }
+function setStatus(msg) {
+  statusEl.textContent = msg;
+}
 
 (async () => {
   const viewer = await createViewer(canvas, setStatus);

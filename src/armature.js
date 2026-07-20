@@ -8,37 +8,258 @@
 //      from bone names, so each entry lists both spellings.)
 
 const ROLE_ALIASES = {
-  hip:            ['Hips','mixamorigHips','CC_Base_Hip','J_Bip_C_Hips','hips','hip','pelvis','Pelvis','root.x','DEF-hips'],
-  spine:          ['Spine','mixamorigSpine','CC_Base_Spine01','J_Bip_C_Spine','spine','spine.x','spine_01.x','DEF-spine'],
-  chest:          ['Spine1','Chest','mixamorigSpine1','mixamorigSpine2','CC_Base_Spine02','J_Bip_C_Chest','spine_02.x','spine.001','DEF-spine.001'],
-  upperChest:     ['Spine2','UpperChest','J_Bip_C_UpperChest','spine.002','spine_03.x','DEF-spine.002'],
-  neck:           ['Neck','mixamorigNeck','CC_Base_NeckTwist01','J_Bip_C_Neck','neck.x','neck','DEF-neck'],
-  head:           ['Head','mixamorigHead','CC_Base_Head','J_Bip_C_Head','head.x','head','DEF-head'],
+  hip: [
+    'Hips',
+    'mixamorigHips',
+    'CC_Base_Hip',
+    'J_Bip_C_Hips',
+    'hips',
+    'hip',
+    'pelvis',
+    'Pelvis',
+    'root.x',
+    'DEF-hips',
+  ],
+  spine: [
+    'Spine',
+    'mixamorigSpine',
+    'CC_Base_Spine01',
+    'J_Bip_C_Spine',
+    'spine',
+    'spine.x',
+    'spine_01.x',
+    'DEF-spine',
+  ],
+  chest: [
+    'Spine1',
+    'Chest',
+    'mixamorigSpine1',
+    'mixamorigSpine2',
+    'CC_Base_Spine02',
+    'J_Bip_C_Chest',
+    'spine_02.x',
+    'spine.001',
+    'DEF-spine.001',
+  ],
+  upperChest: [
+    'Spine2',
+    'UpperChest',
+    'J_Bip_C_UpperChest',
+    'spine.002',
+    'spine_03.x',
+    'DEF-spine.002',
+  ],
+  neck: [
+    'Neck',
+    'mixamorigNeck',
+    'CC_Base_NeckTwist01',
+    'J_Bip_C_Neck',
+    'neck.x',
+    'neck',
+    'DEF-neck',
+  ],
+  head: ['Head', 'mixamorigHead', 'CC_Base_Head', 'J_Bip_C_Head', 'head.x', 'head', 'DEF-head'],
 
-  leftShoulder:   ['LeftShoulder','mixamorigLeftShoulder','CC_Base_L_Clavicle','J_Bip_L_Shoulder','shoulder.L','shoulder_l.x','DEF-shoulder.L'],
-  leftUpperArm:   ['LeftArm','mixamorigLeftArm','CC_Base_L_Upperarm','J_Bip_L_UpperArm','upper_arm.L','upperarm_l.x','arm_upper.L','DEF-upper_arm.L'],
-  leftLowerArm:   ['LeftForeArm','mixamorigLeftForeArm','CC_Base_L_Forearm','J_Bip_L_LowerArm','forearm.L','lowerarm_l.x','arm_lower.L','DEF-forearm.L'],
-  leftHand:       ['LeftHand','mixamorigLeftHand','CC_Base_L_Hand','J_Bip_L_Hand','hand.L','hand_l.x','DEF-hand.L'],
-  leftIndexPalm:  ['LeftHandIndex1','mixamorigLeftHandIndex1','CC_Base_L_Index1','J_Bip_L_Index1','f_index.01.L','DEF-f_index.01.L'],
-  leftMiddlePalm: ['LeftHandMiddle1','mixamorigLeftHandMiddle1','CC_Base_L_Mid1','J_Bip_L_Middle1','f_middle.01.L','DEF-f_middle.01.L'],
-  leftRingPalm:   ['LeftHandRing1','mixamorigLeftHandRing1','CC_Base_L_Ring1','J_Bip_L_Ring1','f_ring.01.L','DEF-f_ring.01.L'],
-  leftPinkyPalm:  ['LeftHandPinky1','mixamorigLeftHandPinky1','CC_Base_L_Pinky1','J_Bip_L_Little1','f_pinky.01.L','DEF-f_pinky.01.L'],
+  leftShoulder: [
+    'LeftShoulder',
+    'mixamorigLeftShoulder',
+    'CC_Base_L_Clavicle',
+    'J_Bip_L_Shoulder',
+    'shoulder.L',
+    'shoulder_l.x',
+    'DEF-shoulder.L',
+  ],
+  leftUpperArm: [
+    'LeftArm',
+    'mixamorigLeftArm',
+    'CC_Base_L_Upperarm',
+    'J_Bip_L_UpperArm',
+    'upper_arm.L',
+    'upperarm_l.x',
+    'arm_upper.L',
+    'DEF-upper_arm.L',
+  ],
+  leftLowerArm: [
+    'LeftForeArm',
+    'mixamorigLeftForeArm',
+    'CC_Base_L_Forearm',
+    'J_Bip_L_LowerArm',
+    'forearm.L',
+    'lowerarm_l.x',
+    'arm_lower.L',
+    'DEF-forearm.L',
+  ],
+  leftHand: [
+    'LeftHand',
+    'mixamorigLeftHand',
+    'CC_Base_L_Hand',
+    'J_Bip_L_Hand',
+    'hand.L',
+    'hand_l.x',
+    'DEF-hand.L',
+  ],
+  leftIndexPalm: [
+    'LeftHandIndex1',
+    'mixamorigLeftHandIndex1',
+    'CC_Base_L_Index1',
+    'J_Bip_L_Index1',
+    'f_index.01.L',
+    'DEF-f_index.01.L',
+  ],
+  leftMiddlePalm: [
+    'LeftHandMiddle1',
+    'mixamorigLeftHandMiddle1',
+    'CC_Base_L_Mid1',
+    'J_Bip_L_Middle1',
+    'f_middle.01.L',
+    'DEF-f_middle.01.L',
+  ],
+  leftRingPalm: [
+    'LeftHandRing1',
+    'mixamorigLeftHandRing1',
+    'CC_Base_L_Ring1',
+    'J_Bip_L_Ring1',
+    'f_ring.01.L',
+    'DEF-f_ring.01.L',
+  ],
+  leftPinkyPalm: [
+    'LeftHandPinky1',
+    'mixamorigLeftHandPinky1',
+    'CC_Base_L_Pinky1',
+    'J_Bip_L_Little1',
+    'f_pinky.01.L',
+    'DEF-f_pinky.01.L',
+  ],
 
-  rightShoulder:  ['RightShoulder','mixamorigRightShoulder','CC_Base_R_Clavicle','J_Bip_R_Shoulder','shoulder.R','shoulder_r.x','DEF-shoulder.R'],
-  rightUpperArm:  ['RightArm','mixamorigRightArm','CC_Base_R_Upperarm','J_Bip_R_UpperArm','upper_arm.R','upperarm_r.x','arm_upper.R','DEF-upper_arm.R'],
-  rightLowerArm:  ['RightForeArm','mixamorigRightForeArm','CC_Base_R_Forearm','J_Bip_R_LowerArm','forearm.R','lowerarm_r.x','arm_lower.R','DEF-forearm.R'],
-  rightHand:      ['RightHand','mixamorigRightHand','CC_Base_R_Hand','J_Bip_R_Hand','hand.R','hand_r.x','DEF-hand.R'],
-  rightIndexPalm: ['RightHandIndex1','mixamorigRightHandIndex1','CC_Base_R_Index1','J_Bip_R_Index1','f_index.01.R','DEF-f_index.01.R'],
-  rightMiddlePalm:['RightHandMiddle1','mixamorigRightHandMiddle1','CC_Base_R_Mid1','J_Bip_R_Middle1','f_middle.01.R','DEF-f_middle.01.R'],
-  rightRingPalm:  ['RightHandRing1','mixamorigRightHandRing1','CC_Base_R_Ring1','J_Bip_R_Ring1','f_ring.01.R','DEF-f_ring.01.R'],
-  rightPinkyPalm: ['RightHandPinky1','mixamorigRightHandPinky1','CC_Base_R_Pinky1','J_Bip_R_Little1','f_pinky.01.R','DEF-f_pinky.01.R'],
+  rightShoulder: [
+    'RightShoulder',
+    'mixamorigRightShoulder',
+    'CC_Base_R_Clavicle',
+    'J_Bip_R_Shoulder',
+    'shoulder.R',
+    'shoulder_r.x',
+    'DEF-shoulder.R',
+  ],
+  rightUpperArm: [
+    'RightArm',
+    'mixamorigRightArm',
+    'CC_Base_R_Upperarm',
+    'J_Bip_R_UpperArm',
+    'upper_arm.R',
+    'upperarm_r.x',
+    'arm_upper.R',
+    'DEF-upper_arm.R',
+  ],
+  rightLowerArm: [
+    'RightForeArm',
+    'mixamorigRightForeArm',
+    'CC_Base_R_Forearm',
+    'J_Bip_R_LowerArm',
+    'forearm.R',
+    'lowerarm_r.x',
+    'arm_lower.R',
+    'DEF-forearm.R',
+  ],
+  rightHand: [
+    'RightHand',
+    'mixamorigRightHand',
+    'CC_Base_R_Hand',
+    'J_Bip_R_Hand',
+    'hand.R',
+    'hand_r.x',
+    'DEF-hand.R',
+  ],
+  rightIndexPalm: [
+    'RightHandIndex1',
+    'mixamorigRightHandIndex1',
+    'CC_Base_R_Index1',
+    'J_Bip_R_Index1',
+    'f_index.01.R',
+    'DEF-f_index.01.R',
+  ],
+  rightMiddlePalm: [
+    'RightHandMiddle1',
+    'mixamorigRightHandMiddle1',
+    'CC_Base_R_Mid1',
+    'J_Bip_R_Middle1',
+    'f_middle.01.R',
+    'DEF-f_middle.01.R',
+  ],
+  rightRingPalm: [
+    'RightHandRing1',
+    'mixamorigRightHandRing1',
+    'CC_Base_R_Ring1',
+    'J_Bip_R_Ring1',
+    'f_ring.01.R',
+    'DEF-f_ring.01.R',
+  ],
+  rightPinkyPalm: [
+    'RightHandPinky1',
+    'mixamorigRightHandPinky1',
+    'CC_Base_R_Pinky1',
+    'J_Bip_R_Little1',
+    'f_pinky.01.R',
+    'DEF-f_pinky.01.R',
+  ],
 
-  leftUpperLeg:   ['LeftUpLeg','mixamorigLeftUpLeg','CC_Base_L_Thigh','J_Bip_L_UpperLeg','thigh.L','thigh_l.x','upperleg.L','DEF-thigh.L'],
-  leftLowerLeg:   ['LeftLeg','mixamorigLeftLeg','CC_Base_L_Calf','J_Bip_L_LowerLeg','shin.L','calf_l.x','lowerleg.L','DEF-shin.L'],
-  leftFoot:       ['LeftFoot','mixamorigLeftFoot','CC_Base_L_Foot','J_Bip_L_Foot','foot.L','foot_l.x','DEF-foot.L'],
-  rightUpperLeg:  ['RightUpLeg','mixamorigRightUpLeg','CC_Base_R_Thigh','J_Bip_R_UpperLeg','thigh.R','thigh_r.x','upperleg.R','DEF-thigh.R'],
-  rightLowerLeg:  ['RightLeg','mixamorigRightLeg','CC_Base_R_Calf','J_Bip_R_LowerLeg','shin.R','calf_r.x','lowerleg.R','DEF-shin.R'],
-  rightFoot:      ['RightFoot','mixamorigRightFoot','CC_Base_R_Foot','J_Bip_R_Foot','foot.R','foot_r.x','DEF-foot.R'],
+  leftUpperLeg: [
+    'LeftUpLeg',
+    'mixamorigLeftUpLeg',
+    'CC_Base_L_Thigh',
+    'J_Bip_L_UpperLeg',
+    'thigh.L',
+    'thigh_l.x',
+    'upperleg.L',
+    'DEF-thigh.L',
+  ],
+  leftLowerLeg: [
+    'LeftLeg',
+    'mixamorigLeftLeg',
+    'CC_Base_L_Calf',
+    'J_Bip_L_LowerLeg',
+    'shin.L',
+    'calf_l.x',
+    'lowerleg.L',
+    'DEF-shin.L',
+  ],
+  leftFoot: [
+    'LeftFoot',
+    'mixamorigLeftFoot',
+    'CC_Base_L_Foot',
+    'J_Bip_L_Foot',
+    'foot.L',
+    'foot_l.x',
+    'DEF-foot.L',
+  ],
+  rightUpperLeg: [
+    'RightUpLeg',
+    'mixamorigRightUpLeg',
+    'CC_Base_R_Thigh',
+    'J_Bip_R_UpperLeg',
+    'thigh.R',
+    'thigh_r.x',
+    'upperleg.R',
+    'DEF-thigh.R',
+  ],
+  rightLowerLeg: [
+    'RightLeg',
+    'mixamorigRightLeg',
+    'CC_Base_R_Calf',
+    'J_Bip_R_LowerLeg',
+    'shin.R',
+    'calf_r.x',
+    'lowerleg.R',
+    'DEF-shin.R',
+  ],
+  rightFoot: [
+    'RightFoot',
+    'mixamorigRightFoot',
+    'CC_Base_R_Foot',
+    'J_Bip_R_Foot',
+    'foot.R',
+    'foot_r.x',
+    'DEF-foot.R',
+  ],
 };
 
 const SMURF_ROLE_MAP = {
@@ -79,10 +300,10 @@ export const ROLES = Object.keys(ROLE_ALIASES);
 // Rig family is inferred from which alias matched the head bone.
 const RIG_SIGNATURES = [
   { rig: 'mixamo', test: (n) => n.startsWith('mixamorig') },
-  { rig: 'cc4',    test: (n) => n.startsWith('CC_Base_') },
-  { rig: 'vroid',  test: (n) => n.startsWith('J_Bip_') },
+  { rig: 'cc4', test: (n) => n.startsWith('CC_Base_') },
+  { rig: 'vroid', test: (n) => n.startsWith('J_Bip_') },
   { rig: 'rigify', test: (n) => n.startsWith('DEF-') || /\.x$/.test(n) },
-  { rig: 'rpm',    test: (n) => n === 'Head' || n === 'Hips' },
+  { rig: 'rpm', test: (n) => n === 'Head' || n === 'Hips' },
 ];
 
 function inferRig(headName) {
@@ -136,7 +357,10 @@ function longestChain(bone) {
     let bestDepth = depth(best);
     for (let i = 1; i < boneChildren.length; i++) {
       const d = depth(boneChildren[i]);
-      if (d > bestDepth) { best = boneChildren[i]; bestDepth = d; }
+      if (d > bestDepth) {
+        best = boneChildren[i];
+        bestDepth = d;
+      }
     }
     chain.push(best);
     cur = best;
@@ -151,8 +375,12 @@ function depth(bone) {
 }
 
 // Fallback: identify left vs right by name suffix/infix.
-function isLeftName(n)  { return /(_l|\.L|Left|_L_|_left)/i.test(n); }
-function isRightName(n) { return /(_r|\.R|Right|_R_|_right)/i.test(n); }
+function isLeftName(n) {
+  return /(_l|\.L|Left|_L_|_left)/i.test(n);
+}
+function isRightName(n) {
+  return /(_r|\.R|Right|_R_|_right)/i.test(n);
+}
 
 function emptyResolved() {
   const out = {};
@@ -167,7 +395,10 @@ function resolveGeneric(bones, firstBone) {
   // 1) Alias lookup.
   for (const role of ROLES) {
     for (const alias of ROLE_ALIASES[role]) {
-      if (bones.has(alias)) { resolved[role] = bones.get(alias); break; }
+      if (bones.has(alias)) {
+        resolved[role] = bones.get(alias);
+        break;
+      }
     }
   }
 
@@ -181,11 +412,11 @@ function resolveGeneric(bones, firstBone) {
     if (chain.length >= 4) {
       resolved.spine = resolved.spine || chain[1];
       resolved.chest = resolved.chest || chain[Math.min(2, chain.length - 1)];
-      resolved.head  = resolved.head  || chain[chain.length - 1];
-      resolved.neck  = resolved.neck  || chain[chain.length - 2];
+      resolved.head = resolved.head || chain[chain.length - 1];
+      resolved.neck = resolved.neck || chain[chain.length - 2];
     } else if (chain.length >= 2) {
       resolved.spine = resolved.spine || chain[1];
-      resolved.head  = resolved.head  || chain[chain.length - 1];
+      resolved.head = resolved.head || chain[chain.length - 1];
     }
   }
 
@@ -195,27 +426,27 @@ function resolveGeneric(bones, firstBone) {
     for (const [name, b] of bones) {
       const lower = name.toLowerCase();
       if (!keywords.some((k) => lower.includes(k))) continue;
-      const left  = isLeftName(name);
+      const left = isLeftName(name);
       const right = isRightName(name);
-      if (side === 'left'  && !left)  continue;
+      if (side === 'left' && !left) continue;
       if (side === 'right' && !right) continue;
       resolved[role] = b;
       return;
     }
   }
-  findByKeywords('leftShoulder',  ['clavicle','shoulder'], 'left');
-  findByKeywords('rightShoulder', ['clavicle','shoulder'], 'right');
-  findByKeywords('leftUpperArm',  ['upperarm','upper_arm','arm'], 'left');
-  findByKeywords('rightUpperArm', ['upperarm','upper_arm','arm'], 'right');
-  findByKeywords('leftLowerArm',  ['forearm','lowerarm','lower_arm'], 'left');
-  findByKeywords('rightLowerArm', ['forearm','lowerarm','lower_arm'], 'right');
-  findByKeywords('leftHand',  ['hand'], 'left');
+  findByKeywords('leftShoulder', ['clavicle', 'shoulder'], 'left');
+  findByKeywords('rightShoulder', ['clavicle', 'shoulder'], 'right');
+  findByKeywords('leftUpperArm', ['upperarm', 'upper_arm', 'arm'], 'left');
+  findByKeywords('rightUpperArm', ['upperarm', 'upper_arm', 'arm'], 'right');
+  findByKeywords('leftLowerArm', ['forearm', 'lowerarm', 'lower_arm'], 'left');
+  findByKeywords('rightLowerArm', ['forearm', 'lowerarm', 'lower_arm'], 'right');
+  findByKeywords('leftHand', ['hand'], 'left');
   findByKeywords('rightHand', ['hand'], 'right');
-  findByKeywords('leftUpperLeg',  ['thigh','upleg','upperleg'], 'left');
-  findByKeywords('rightUpperLeg', ['thigh','upleg','upperleg'], 'right');
-  findByKeywords('leftLowerLeg',  ['calf','shin','lowerleg'], 'left');
-  findByKeywords('rightLowerLeg', ['calf','shin','lowerleg'], 'right');
-  findByKeywords('leftFoot',  ['foot'], 'left');
+  findByKeywords('leftUpperLeg', ['thigh', 'upleg', 'upperleg'], 'left');
+  findByKeywords('rightUpperLeg', ['thigh', 'upleg', 'upperleg'], 'right');
+  findByKeywords('leftLowerLeg', ['calf', 'shin', 'lowerleg'], 'left');
+  findByKeywords('rightLowerLeg', ['calf', 'shin', 'lowerleg'], 'right');
+  findByKeywords('leftFoot', ['foot'], 'left');
   findByKeywords('rightFoot', ['foot'], 'right');
 
   return resolved;
@@ -242,9 +473,17 @@ export function detectArmature(root) {
 
   if (!firstBone || bones.size === 0) {
     return {
-      bones: new Map(), root: null, resolved: emptyResolved(), rig: 'unknown', hasSkeleton: false,
-      setOverride() { return false; },
-      getRole() { return null; },
+      bones: new Map(),
+      root: null,
+      resolved: emptyResolved(),
+      rig: 'unknown',
+      hasSkeleton: false,
+      setOverride() {
+        return false;
+      },
+      getRole() {
+        return null;
+      },
     };
   }
 
@@ -285,6 +524,8 @@ export function detectArmature(root) {
       return true;
     },
 
-    getRole(role) { return resolved[role] || null; },
+    getRole(role) {
+      return resolved[role] || null;
+    },
   };
 }

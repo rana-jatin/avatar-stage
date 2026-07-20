@@ -25,9 +25,12 @@ export async function createViewer(canvas, onStatus = () => {}) {
   key.position.set(2, 3, 2);
   key.castShadow = true;
   key.shadow.mapSize.set(1024, 1024);
-  key.shadow.camera.left = -3; key.shadow.camera.right = 3;
-  key.shadow.camera.top = 3; key.shadow.camera.bottom = -3;
-  key.shadow.camera.near = 0.1; key.shadow.camera.far = 20;
+  key.shadow.camera.left = -3;
+  key.shadow.camera.right = 3;
+  key.shadow.camera.top = 3;
+  key.shadow.camera.bottom = -3;
+  key.shadow.camera.near = 0.1;
+  key.shadow.camera.far = 20;
   key.shadow.bias = -0.0005;
   scene.add(key);
   const fill = new THREE.DirectionalLight(0xb0c4ff, 0.4);
@@ -36,7 +39,7 @@ export async function createViewer(canvas, onStatus = () => {}) {
 
   const ground = new THREE.Mesh(
     new THREE.CircleGeometry(2.5, 64),
-    new THREE.ShadowMaterial({ opacity: 0.25 })
+    new THREE.ShadowMaterial({ opacity: 0.25 }),
   );
   ground.rotation.x = -Math.PI / 2;
   ground.receiveShadow = true;
@@ -56,7 +59,10 @@ export async function createViewer(canvas, onStatus = () => {}) {
 
   // --- Model state ---
   const viewer = {
-    scene, camera, renderer, controls,
+    scene,
+    camera,
+    renderer,
+    controls,
     avatar: null,
     armature: null,
     mixer: null,
@@ -64,9 +70,12 @@ export async function createViewer(canvas, onStatus = () => {}) {
     procAnimations: { actions: new Map(), status: [] },
     morphIndex: { byName: new Map(), allNames: [], arkit: [] },
     currentFileName: null,
-    setIdleUpdate(fn) { idleUpdate = fn; },
-    frameHead, frameBody,
-    loadGLB,             // async (source: string | ArrayBuffer, fileName?)
+    setIdleUpdate(fn) {
+      idleUpdate = fn;
+    },
+    frameHead,
+    frameBody,
+    loadGLB, // async (source: string | ArrayBuffer, fileName?)
     onModelLoaded: null, // set by main.js
   };
 
@@ -136,7 +145,8 @@ export async function createViewer(canvas, onStatus = () => {}) {
       if (typeof source === 'string') {
         gltf = await new Promise((resolve, reject) => {
           loader.load(
-            source, resolve,
+            source,
+            resolve,
             (xhr) => {
               if (xhr.lengthComputable) {
                 const pct = Math.round((xhr.loaded / xhr.total) * 100);

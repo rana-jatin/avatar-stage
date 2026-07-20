@@ -28,17 +28,43 @@ const ROLE_LABELS = {
   upperChest: 'Upper Chest',
   neck: 'Neck',
   head: 'Head',
-  leftShoulder: 'L Shoulder',  leftUpperArm: 'L Upper Arm', leftLowerArm: 'L Forearm', leftHand: 'L Hand',
-  leftThumbPalm: 'L Thumb Palm', leftIndexPalm: 'L Index Palm', leftMiddlePalm: 'L Middle Palm', leftRingPalm: 'L Ring Palm', leftPinkyPalm: 'L Pinky Palm',
-  rightShoulder: 'R Shoulder', rightUpperArm: 'R Upper Arm', rightLowerArm: 'R Forearm', rightHand: 'R Hand',
-  rightThumbPalm: 'R Thumb Palm', rightIndexPalm: 'R Index Palm', rightMiddlePalm: 'R Middle Palm', rightRingPalm: 'R Ring Palm', rightPinkyPalm: 'R Pinky Palm',
-  leftUpperLeg: 'L Thigh',  leftLowerLeg: 'L Shin',  leftFoot: 'L Foot',
-  rightUpperLeg: 'R Thigh', rightLowerLeg: 'R Shin', rightFoot: 'R Foot',
+  leftShoulder: 'L Shoulder',
+  leftUpperArm: 'L Upper Arm',
+  leftLowerArm: 'L Forearm',
+  leftHand: 'L Hand',
+  leftThumbPalm: 'L Thumb Palm',
+  leftIndexPalm: 'L Index Palm',
+  leftMiddlePalm: 'L Middle Palm',
+  leftRingPalm: 'L Ring Palm',
+  leftPinkyPalm: 'L Pinky Palm',
+  rightShoulder: 'R Shoulder',
+  rightUpperArm: 'R Upper Arm',
+  rightLowerArm: 'R Forearm',
+  rightHand: 'R Hand',
+  rightThumbPalm: 'R Thumb Palm',
+  rightIndexPalm: 'R Index Palm',
+  rightMiddlePalm: 'R Middle Palm',
+  rightRingPalm: 'R Ring Palm',
+  rightPinkyPalm: 'R Pinky Palm',
+  leftUpperLeg: 'L Thigh',
+  leftLowerLeg: 'L Shin',
+  leftFoot: 'L Foot',
+  rightUpperLeg: 'R Thigh',
+  rightLowerLeg: 'R Shin',
+  rightFoot: 'R Foot',
 };
 
 export function buildUI(container, ctx) {
   const { viewer, idle, onUploadFile } = ctx;
-  const { animations, morphIndex, armature, procAnimations, frameHead, frameBody, currentFileName } = viewer;
+  const {
+    animations,
+    morphIndex,
+    armature,
+    procAnimations,
+    frameHead,
+    frameBody,
+    currentFileName,
+  } = viewer;
 
   container.innerHTML = '';
 
@@ -52,7 +78,11 @@ export function buildUI(container, ctx) {
     if (f) onUploadFile(f);
     fileInput.value = '';
   });
-  const fileLabel = el('div', { className: 'file-name' }, currentFileName || '(demo model — drop a GLB on the stage to swap)');
+  const fileLabel = el(
+    'div',
+    { className: 'file-name' },
+    currentFileName || '(demo model — drop a GLB on the stage to swap)',
+  );
   up.body.append(uploadBtn, fileInput, fileLabel);
   container.append(up.root);
 
@@ -93,7 +123,11 @@ export function buildUI(container, ctx) {
       overrideGrid.append(row);
     }
     armP.body.append(overrideGrid);
-    const hint = el('div', { className: 'hint' }, 'Changing a bone here updates idle behaviors immediately. Procedural animations use the mapping captured when the model loaded.');
+    const hint = el(
+      'div',
+      { className: 'hint' },
+      'Changing a bone here updates idle behaviors immediately. Procedural animations use the mapping captured when the model loaded.',
+    );
     armP.body.append(hint);
   }
   container.append(armP.root);
@@ -127,7 +161,13 @@ export function buildUI(container, ctx) {
   }
 
   if (animations.size === 0) {
-    anim.body.append(el('div', { className: 'empty' }, 'No embedded animations in this model. Use the Procedural Animations panel.'));
+    anim.body.append(
+      el(
+        'div',
+        { className: 'empty' },
+        'No embedded animations in this model. Use the Procedural Animations panel.',
+      ),
+    );
   } else {
     const grid = el('div', { className: 'btn-grid' });
     for (const [name, action] of animations) {
@@ -151,7 +191,11 @@ export function buildUI(container, ctx) {
     function stopProc() {
       if (currentProc) {
         currentProc.fadeOut(0.25);
-        setTimeout(() => { try { currentProc.stop(); } catch {} }, 260);
+        setTimeout(() => {
+          try {
+            currentProc.stop();
+          } catch {}
+        }, 260);
         currentProc = null;
       }
       idle.suppressHeadSway(false);
@@ -166,11 +210,15 @@ export function buildUI(container, ctx) {
     const procGrid = el('div', { className: 'btn-grid' });
     for (const s of procAnimations.status) {
       const action = procAnimations.actions.get(s.name);
-      const b = el('button', {
-        className: 'btn' + (s.ready ? '' : ' disabled'),
-        title: s.ready ? s.name : `Missing bones: ${s.missing.join(', ')}`,
-        disabled: !s.ready,
-      }, s.name);
+      const b = el(
+        'button',
+        {
+          className: 'btn' + (s.ready ? '' : ' disabled'),
+          title: s.ready ? s.name : `Missing bones: ${s.missing.join(', ')}`,
+          disabled: !s.ready,
+        },
+        s.name,
+      );
       if (action) b.addEventListener('click', () => playProc(action));
       procGrid.append(b);
     }
@@ -208,9 +256,9 @@ export function buildUI(container, ctx) {
     return row;
   };
   idleP.body.append(
-    toggle('Auto-blink',  idle.state.blink.enabled,    (v) => idle.setBlinkEnabled(v)),
-    toggle('Breathing',   idle.state.breathing.enabled, (v) => idle.setBreathingEnabled(v)),
-    toggle('Head sway',   idle.state.headSway.enabled,  (v) => idle.setHeadSwayEnabled(v)),
+    toggle('Auto-blink', idle.state.blink.enabled, (v) => idle.setBlinkEnabled(v)),
+    toggle('Breathing', idle.state.breathing.enabled, (v) => idle.setBreathingEnabled(v)),
+    toggle('Head sway', idle.state.headSway.enabled, (v) => idle.setHeadSwayEnabled(v)),
   );
   container.append(idleP.root);
 
@@ -231,7 +279,10 @@ export function buildUI(container, ctx) {
   const lipBtn = el('button', { className: 'btn wide' }, 'Play viseme sequence');
   let cancelLip = null;
   lipBtn.addEventListener('click', () => {
-    if (cancelLip) { cancelLip(); cancelLip = null; }
+    if (cancelLip) {
+      cancelLip();
+      cancelLip = null;
+    }
     const seq = textToVisemes(lipInput.value);
     cancelLip = playVisemeSequence(morphIndex, seq, 95);
   });
@@ -243,7 +294,11 @@ export function buildUI(container, ctx) {
   if (morphIndex.allNames.length === 0) {
     sl.body.append(el('div', { className: 'empty' }, 'No morph targets on this model.'));
   } else {
-    const search = el('input', { type: 'search', className: 'search', placeholder: 'Filter morphs…' });
+    const search = el('input', {
+      type: 'search',
+      className: 'search',
+      placeholder: 'Filter morphs…',
+    });
     sl.body.append(search);
     const groupContainer = el('div');
     sl.body.append(groupContainer);
