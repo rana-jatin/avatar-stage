@@ -1,0 +1,62 @@
+name: Bug report
+description: Something behaves differently than documented
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Rig and model problems are far easier to fix with details about the
+        skeleton. If you can share the `.glb`, please attach it.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you expected, and what you got instead.
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Load model X
+        2. Click "Bhangra dance"
+        3. The left arm doesn't move
+    validations:
+      required: true
+
+  - type: input
+    id: model
+    attributes:
+      label: Model / rig
+      description: >
+        Which rig family does the Armature panel report, and where did the
+        model come from (Mixamo, Ready Player Me, custom Blender rig, ...)?
+      placeholder: 'rig: mixamo — exported from Mixamo'
+    validations:
+      required: true
+
+  - type: textarea
+    id: console
+    attributes:
+      label: Console output
+      description: >
+        Load the demo with `?debug` appended to the URL, reproduce, and paste
+        anything the console prints.
+      render: text
+
+  - type: input
+    id: environment
+    attributes:
+      label: Browser and OS
+      placeholder: Chrome 141 on Windows 11
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: avatar-stage version
+      placeholder: 0.1.0 (or a commit SHA)
