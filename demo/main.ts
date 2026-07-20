@@ -1,8 +1,6 @@
-import { createViewer } from './viewer';
-import type { Viewer } from './viewer';
-import { createIdle } from './idle';
+import { createViewer, createIdle, setDebug } from '../src/index';
+import type { Viewer } from '../src/index';
 import { buildUI } from './ui';
-import { setDebug } from './debug';
 
 setDebug(new URLSearchParams(window.location.search).has('debug'));
 

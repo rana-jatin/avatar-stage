@@ -2,13 +2,13 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import type { GLTF } from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { discoverMorphs } from './morphs';
-import type { MorphIndex } from './morphs';
-import { detectArmature } from './armature';
-import type { Armature } from './armature';
-import { createProcAnimations } from './procAnim';
-import type { ProcAnimations } from './procAnim';
-import { dlog } from './debug';
+import { discoverMorphs } from './morphs.js';
+import type { MorphIndex } from './morphs.js';
+import { detectArmature } from './armature.js';
+import type { Armature } from './armature.js';
+import { createProcAnimations } from './procAnim.js';
+import type { ProcAnimations } from './procAnim.js';
+import { dlog } from './debug.js';
 
 export interface Viewer {
   scene: THREE.Scene;

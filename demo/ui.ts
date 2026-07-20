@@ -1,10 +1,16 @@
-import { setMorph, getMorph, resetMorphs, groupByRegion } from './morphs';
-import { PRESETS, tweenPreset } from './presets';
-import { textToVisemes, playVisemeSequence } from './lipsync';
-import { ROLES } from './armature';
-import { dlog } from './debug';
-import type { Viewer } from './viewer';
-import type { IdleController } from './idle';
+import {
+  setMorph,
+  getMorph,
+  resetMorphs,
+  groupByRegion,
+  PRESETS,
+  tweenPreset,
+  textToVisemes,
+  playVisemeSequence,
+  ROLES,
+  dlog,
+} from '../src/index';
+import type { Viewer, IdleController } from '../src/index';
 import type { AnimationAction } from 'three';
 
 export interface BuildUIContext {

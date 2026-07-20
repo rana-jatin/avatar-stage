@@ -4,7 +4,7 @@
 
 import * as THREE from 'three';
 import type { AnimationAction, AnimationMixer, Bone, KeyframeTrack, Object3D } from 'three';
-import type { Armature, Role } from './armature';
+import type { Armature, Role } from './armature.js';
 
 const PI = Math.PI;
 // NOT degrees-to-radians (that would be PI / 180). This is a hand-tuned

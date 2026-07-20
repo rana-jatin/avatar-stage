@@ -1,6 +1,6 @@
-import { setMorph } from './morphs';
-import type { MorphIndex } from './morphs';
-import type { Armature } from './armature';
+import { setMorph } from './morphs.js';
+import type { MorphIndex } from './morphs.js';
+import type { Armature } from './armature.js';
 import type { Bone } from 'three';
 
 // Idle behaviors are bound to the detected armature (head/spine) + morph index.

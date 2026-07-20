@@ -2,8 +2,8 @@
 // Adapted from the TalkingHead library's viseme timing concept; values are reduced/empirical
 // because we have no true Oculus visemes, only ARKit blendshapes to approximate them.
 
-import { setMorph } from './morphs';
-import type { MorphIndex } from './morphs';
+import { setMorph } from './morphs.js';
+import type { MorphIndex } from './morphs.js';
 
 export type Viseme =
   | 'PP'

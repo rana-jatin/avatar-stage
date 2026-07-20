@@ -1,21 +1,56 @@
 {
-  "name": "x-factor-dashboard",
+  "name": "avatar-stage",
   "private": true,
   "version": "0.1.0",
   "type": "module",
+  "description": "Three.js toolkit for rigged GLB avatars: humanoid rig detection, runtime-generated procedural animations, ARKit expression presets, and viseme lip-sync.",
+  "keywords": [
+    "threejs",
+    "avatar",
+    "animation",
+    "gltf",
+    "glb",
+    "arkit",
+    "blendshapes",
+    "lipsync",
+    "skeleton",
+    "rig"
+  ],
+  "license": "MIT",
+  "author": "Jatin Rana",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rana-jatin/avatar-stage.git"
+  },
+  "homepage": "https://rana-jatin.github.io/avatar-stage/",
+  "bugs": {
+    "url": "https://github.com/rana-jatin/avatar-stage/issues"
+  },
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "tsc -p tsconfig.build.json",
+    "build:demo": "vite build",
     "preview": "vite preview",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "prepublishOnly": "npm run build"
   },
-  "dependencies": {
-    "three": "^0.180.0"
+  "peerDependencies": {
+    "three": ">=0.160.0"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -24,6 +59,7 @@
     "eslint-config-prettier": "^10.1.8",
     "globals": "^17.7.0",
     "prettier": "^3.9.5",
+    "three": "^0.180.0",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.64.0",
     "vite": "^5.4.0",

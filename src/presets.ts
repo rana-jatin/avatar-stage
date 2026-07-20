@@ -1,4 +1,4 @@
-import type { MorphIndex } from './morphs';
+import type { MorphIndex } from './morphs.js';
 
 export type MorphValues = Record<string, number>;
 

@@ -8,7 +8,7 @@
 //      from bone names, so each entry lists both spellings.)
 
 import type { Bone, Object3D, SkinnedMesh } from 'three';
-import { dlog } from './debug';
+import { dlog } from './debug.js';
 
 const ROLE_ALIASES = {
   hip: [
