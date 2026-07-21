@@ -1,6 +1,5 @@
 {
   "name": "avatar-stage",
-  "private": true,
   "version": "0.1.0",
   "type": "module",
   "description": "Three.js toolkit for rigged GLB avatars: humanoid rig detection, runtime-generated procedural animations, ARKit expression presets, and viseme lip-sync.",
